@@ -35,3 +35,7 @@ This agent loads and processes web documents using LangChain and related librari
 
 - Python 3.8+
 - See `requirements.txt` for required packages.
+
+Based on example from LangGraph docs:
+
+- <https://langchain-ai.github.io/langgraph/tutorials/rag/langgraph_agentic_rag/>
