@@ -1,5 +1,16 @@
 import getpass
 import os
+from langchain_community.document_loaders import WebBaseLoader
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_core.vectorstores import InMemoryVectorStore
+from langchain_openai import OpenAIEmbeddings
+from langchain.tools.retriever import create_retriever_tool
+from langgraph.graph import MessagesState, StateGraph, START, END
+from langchain.chat_models import init_chat_model
+from pydantic import BaseModel, Field
+from typing import Literal
+from langchain_core.messages import convert_to_messages
+from langgraph.prebuilt import ToolNode, tools_condition
 
 
 def _set_env(key: str):
@@ -9,17 +20,17 @@ def _set_env(key: str):
 
 _set_env("OPENAI_API_KEY")
 
-from langchain_community.document_loaders import WebBaseLoader
-
 urls = [
-    "https://lilianweng.github.io/posts/2024-11-28-reward-hacking/",
-    "https://lilianweng.github.io/posts/2024-07-07-hallucination/",
-    "https://lilianweng.github.io/posts/2024-04-12-diffusion-video/",
+    "https://github.com/cortside/guidelines/blob/master/docs/rest/BestPractices.md",
+    "https://github.com/cortside/guidelines/blob/master/docs/rest/Representation.md",
+    "https://github.com/cortside/guidelines/blob/master/docs/rest/Resource.md",
+    "https://github.com/cortside/guidelines/blob/master/docs/rest/Errors.md",
+    "https://github.com/cortside/guidelines/blob/master/docs/architecture/REST.md",
+    "https://github.com/cortside/guidelines/blob/master/docs/architecture/TokenExchange.md",
+    "https://github.com/cortside/guidelines/blob/master/docs/rest/HTTPStatusCodes.md"
 ]
 
 docs = [WebBaseLoader(url).load() for url in urls]
-
-from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 docs_list = [item for sublist in docs for item in sublist]
 
@@ -28,24 +39,16 @@ text_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
 )
 doc_splits = text_splitter.split_documents(docs_list)
 
-from langchain_core.vectorstores import InMemoryVectorStore
-from langchain_openai import OpenAIEmbeddings
-
 vectorstore = InMemoryVectorStore.from_documents(
     documents=doc_splits, embedding=OpenAIEmbeddings()
 )
 retriever = vectorstore.as_retriever()
 
-from langchain.tools.retriever import create_retriever_tool
-
 retriever_tool = create_retriever_tool(
     retriever,
     "retrieve_blog_posts",
-    "Search and return information about Lilian Weng blog posts.",
+    "Search and return information about guidelines.",
 )
-
-from langgraph.graph import MessagesState
-from langchain.chat_models import init_chat_model
 
 response_model = init_chat_model("openai:gpt-4.1", temperature=0)
 
@@ -59,9 +62,6 @@ def generate_query_or_respond(state: MessagesState):
         .bind_tools([retriever_tool]).invoke(state["messages"])
     )
     return {"messages": [response]}
-
-from pydantic import BaseModel, Field
-from typing import Literal
 
 GRADE_PROMPT = (
     "You are a grader assessing relevance of a retrieved document to a user question. \n "
@@ -104,8 +104,6 @@ def grade_documents(
     else:
         return "rewrite_question"
 
-from langchain_core.messages import convert_to_messages
-
 REWRITE_PROMPT = (
     "Look at the input and try to reason about the underlying semantic intent / meaning.\n"
     "Here is the initial question:"
@@ -141,10 +139,6 @@ def generate_answer(state: MessagesState):
     prompt = GENERATE_PROMPT.format(question=question, context=context)
     response = response_model.invoke([{"role": "user", "content": prompt}])
     return {"messages": [response]}
-
-from langgraph.graph import StateGraph, START, END
-from langgraph.prebuilt import ToolNode
-from langgraph.prebuilt import tools_condition
 
 workflow = StateGraph(MessagesState)
 
@@ -188,7 +182,7 @@ for chunk in graph.stream(
         "messages": [
             {
                 "role": "user",
-                "content": "What does Lilian Weng say about types of reward hacking?",
+                "content": "What do the guidelines say about success criteria for REST APIs?",
             }
         ]
     }

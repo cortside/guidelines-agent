@@ -24,7 +24,7 @@
 2. Run the agent script:
 
    ```pwsh
-   python agent.py
+   python main.py
    ```
 
 ## Description
