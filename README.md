@@ -1,41 +1,37 @@
-# guidelines-agent
+# guidelines-agent Repository
 
-## Setup
+## Overview
+This repository provides an agent and chatbot system for answering questions about REST API and architecture guidelines. It retrieves and summarizes content from markdown documents hosted on GitHub, using LangChain, LangGraph, and OpenAI models for retrieval, grading, rewriting, and answering user queries.
 
-1. Install Python 3.8 or newer.
+### Main Components
+- **agent/**: Python 3.11 FastAPI agent that connects to an MCP server over HTTP. Handles document loading, semantic search, and workflow orchestration for question answering. See [agent/README.md](agent/README.md) for setup and usage.
+- **chatbot/**: React 19 + TypeScript chat UI for interacting with the agent. See [chatbot/README.md](chatbot/README.md) for setup and usage.
 
-2. (Recommended) Create and activate a virtual environment:
-
-   ```pwsh
-   python -m venv venv
-   .\venv\Scripts\Activate.ps1
-   ```
-
-3. Install dependencies:
-
-   ```pwsh
-   pip install -r requirements.txt
-   ```
-
-## Running the Agent
-
-1. Set your OpenAI API key when prompted.
-
-2. Run the agent script:
-
-   ```pwsh
-   python main.py
-   ```
-
-## Description
-
-This agent loads and processes web documents using LangChain and related libraries. Make sure your environment has internet access for document loading.
+## Features
+- Loads and processes markdown guidelines from GitHub
+- Splits documents, embeds chunks, and enables semantic search
+- Uses OpenAI models for retrieval and answering
+- Supports streaming chat responses
+- Authenticates users via OpenID Connect
+- Observability with Prometheus metrics and OpenTelemetry tracing
+- Infrastructure via Docker Compose and Kubernetes manifests
 
 ## Requirements
+- Python 3.8+ (agent)
+- Node.js 18+ (chatbot)
+- See `agent/requirements.txt` and `chatbot/package.json` for dependencies
 
-- Python 3.8+
-- See `requirements.txt` for required packages.
+## Documentation
+- Architecture, conventions, and recipes: see [docs/](docs/)
+- MCP tool catalog: see [docs/mcp-tools-catalog.md](docs/mcp-tools-catalog.md)
+- Copilot instructions: see [docs/copilot-instructions-guidelines.md](docs/copilot-instructions-guidelines.md)
 
-Based on example from LangGraph docs:
+## Getting Started
+- See [agent/README.md](agent/README.md) for agent setup and running instructions
+- See [chatbot/README.md](chatbot/README.md) for chatbot setup and running instructions
 
-- <https://langchain-ai.github.io/langgraph/tutorials/rag/langgraph_agentic_rag/>
+## License
+MIT
+
+---
+For more details, refer to the documentation in the `docs/` folder and the individual service READMEs.
