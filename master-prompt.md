@@ -16,7 +16,6 @@ You are a senior software engineer generating a complete application with two re
 ### Deliverables
 1. **agent**:
    - `main.py` FastAPI app
-   - Auth middleware for JWT validation
    - MCP client HTTP integration with retries
    - `/chat`, `/health`, `/metrics` endpoints
    - Prometheus metrics and OTEL tracing
@@ -25,7 +24,6 @@ You are a senior software engineer generating a complete application with two re
 
 2. **chatbot**:
    - Vite + React 19 + TypeScript + Tailwind + shadcn/ui
-   - Login via OIDC PKCE
    - Chat page with streaming messages via WebSocket
    - API client for backend
    - Dockerfile, `.env.example`
