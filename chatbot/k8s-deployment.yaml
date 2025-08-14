@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chatbot
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chatbot
+  template:
+    metadata:
+      labels:
+        app: chatbot
+    spec:
+      containers:
+      - name: chatbot
+        image: chatbot:latest
+        ports:
+        - containerPort: 5173
+        env:
+        - name: VITE_API_URL
+          value: "http://agent:8000"
+        - name: VITE_OIDC_AUTHORITY
+          value: "https://identityserver.cortside.net"
+        - name: VITE_OIDC_CLIENT_ID
+          value: "chatbot-ui"
