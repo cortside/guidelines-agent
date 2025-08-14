@@ -1,5 +1,12 @@
 import getpass
 import os
+import asyncio
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
+from fastapi.responses import StreamingResponse, JSONResponse
+from prometheus_client import Counter, generate_latest, CONTENT_TYPE_LATEST
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+from dotenv import load_dotenv
+from mcp_client import MCPClient
 from langchain_community.document_loaders import WebBaseLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.vectorstores import InMemoryVectorStore
@@ -12,13 +19,7 @@ from typing import Literal
 from langchain_core.messages import convert_to_messages
 from langgraph.prebuilt import ToolNode, tools_condition
 
-
-def _set_env(key: str):
-    if key not in os.environ:
-        os.environ[key] = getpass.getpass(f"{key}:")
-
-
-_set_env("OPENAI_API_KEY")
+load_dotenv()
 
 urls = [
     "https://github.com/cortside/guidelines/blob/master/docs/rest/BestPractices.md",
@@ -177,18 +178,90 @@ graph = workflow.compile()
 with open("workflow.png", "wb") as f:
     f.write(graph.get_graph().draw_mermaid_png())
 
-for chunk in graph.stream(
-    {
-        "messages": [
-            {
-                "role": "user",
-                "content": "What do the guidelines say about success criteria for REST APIs?",
-            }
-        ]
-    }
-):
-    for node, update in chunk.items():
-        print("Update from node", node)
-        update["messages"][-1].pretty_print()
-        print("\n\n")
+# for chunk in graph.stream(
+#     {
+#         "messages": [
+#             {
+#                 "role": "user",
+#                 "content": "What do the guidelines say about success criteria for REST APIs?",
+#             }
+#         ]
+#     }
+# ):
+#     for node, update in chunk.items():
+#         print("Update from node", node)
+#         update["messages"][-1].pretty_print()
+#         print("\n\n")
+
+app = FastAPI()
+FastAPIInstrumentor().instrument_app(app)
+
+# Prometheus metrics
+CHAT_REQUESTS = Counter('chat_requests_total', 'Total chat requests')
+CHAT_RESPONSES = Counter('chat_responses_total', 'Total chat responses')
+HEALTH_CHECKS = Counter('health_checks_total', 'Total health checks')
+
+# In-memory chat history per user
+chat_history = {}
+
+@app.post("/chat")
+async def chat(request: Request):
+    CHAT_REQUESTS.inc()
+    data = await request.json()
+    user_id = data.get("user_id", "anonymous")
+    message = data["message"]
+    chat_history.setdefault(user_id, []).append({"role": "user", "content": message})
+    # Integrate workflow logic
+    user_messages = chat_history[user_id]
+    # Convert to LangChain messages format
+    lc_messages = convert_to_messages(user_messages)
+    # Run the workflow graph
+    answer = None
+    async for chunk in graph.astream({"messages": lc_messages}):
+        for node, update in chunk.items():
+            if update["messages"]:
+                answer = update["messages"][-1].content
+    CHAT_RESPONSES.inc()
+    return JSONResponse({"answer": answer or "No answer generated."})
+
+@app.websocket("/chat/ws")
+async def chat_ws(websocket: WebSocket):
+    await websocket.accept()
+    user_id = websocket.query_params.get("user_id", "anonymous")
+    chat_history.setdefault(user_id, [])
+    try:
+        while True:
+            data = await websocket.receive_text()
+            chat_history[user_id].append({"role": "user", "content": data})
+            # Integrate workflow logic
+            user_messages = chat_history[user_id]
+            lc_messages = convert_to_messages(user_messages)
+            answer = None
+            async for chunk in graph.astream({"messages": lc_messages}):
+                for node, update in chunk.items():
+                    if update["messages"]:
+                        answer = update["messages"][-1].content
+                        await websocket.send_text(answer)
+    except WebSocketDisconnect:
+        pass
+
+@app.get("/health")
+async def health():
+    HEALTH_CHECKS.inc()
+    return {"status": "ok"}
+
+@app.get("/metrics")
+async def metrics():
+    return StreamingResponse(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
+@app.get("/history/{user_id}")
+async def get_history(user_id: str):
+    return {"history": chat_history.get(user_id, [])}
+
+@app.post("/mcp/{tool_name}")
+async def call_mcp_tool(tool_name: str, request: Request):
+    payload = await request.json()
+    mcp = MCPClient()
+    result = await mcp.call_tool(tool_name, payload)
+    return result
 
