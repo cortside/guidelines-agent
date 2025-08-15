@@ -3,6 +3,7 @@ import os
 import asyncio
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import StreamingResponse, JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 from prometheus_client import Counter, generate_latest, CONTENT_TYPE_LATEST
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from dotenv import load_dotenv
@@ -22,15 +23,16 @@ from langgraph.prebuilt import ToolNode, tools_condition
 load_dotenv()
 
 urls = [
-    "https://github.com/cortside/guidelines/blob/master/docs/rest/BestPractices.md",
-    "https://github.com/cortside/guidelines/blob/master/docs/rest/Representation.md",
-    "https://github.com/cortside/guidelines/blob/master/docs/rest/Resource.md",
-    "https://github.com/cortside/guidelines/blob/master/docs/rest/Errors.md",
-    "https://github.com/cortside/guidelines/blob/master/docs/architecture/REST.md",
-    "https://github.com/cortside/guidelines/blob/master/docs/architecture/TokenExchange.md",
-    "https://github.com/cortside/guidelines/blob/master/docs/rest/HTTPStatusCodes.md"
+    "https://raw.githubusercontent.com/cortside/guidelines/refs/heads/master/docs/rest/BestPractices.md",
+    "https://raw.githubusercontent.com/cortside/guidelines/refs/heads/master/docs/rest/Representation.md",
+    "https://raw.githubusercontent.com/cortside/guidelines/refs/heads/master/docs/rest/Resource.md",
+    "https://raw.githubusercontent.com/cortside/guidelines/refs/heads/master/docs/rest/Errors.md",
+    "https://raw.githubusercontent.com/cortside/guidelines/refs/heads/master/docs/architecture/REST.md",
+    "https://raw.githubusercontent.com/cortside/guidelines/refs/heads/master/docs/architecture/TokenExchange.md",
+    "https://raw.githubusercontent.com/cortside/guidelines/refs/heads/master/docs/rest/HTTPStatusCodes.md"
 ]
 
+print(f"Loading documents from URLs: {len(urls)}")
 docs = [WebBaseLoader(url).load() for url in urls]
 
 docs_list = [item for sublist in docs for item in sublist]
@@ -45,6 +47,9 @@ vectorstore = InMemoryVectorStore.from_documents(
 )
 retriever = vectorstore.as_retriever()
 
+print(f"Number of documents in vectorstore: {len(urls)}")
+print(f"Number of chunks: {len(doc_splits)}")
+
 retriever_tool = create_retriever_tool(
     retriever,
     "retrieve_blog_posts",
@@ -58,10 +63,16 @@ def generate_query_or_respond(state: MessagesState):
     """Call the model to generate a response based on the current state. Given
     the question, it will decide to retrieve using the retriever tool, or simply respond to the user.
     """
+
+    question = state["messages"][0].content
+    print(f"User question: {question}")
+
     response = (
         response_model
         .bind_tools([retriever_tool]).invoke(state["messages"])
     )
+
+    print(f"Response from model: {response}")
     return {"messages": [response]}
 
 GRADE_PROMPT = (
@@ -81,9 +92,6 @@ class GradeDocuments(BaseModel):
     )
 
 
-grader_model = init_chat_model("openai:gpt-4.1", temperature=0)
-
-
 def grade_documents(
     state: MessagesState,
 ) -> Literal["generate_answer", "rewrite_question"]:
@@ -92,8 +100,9 @@ def grade_documents(
     context = state["messages"][-1].content
 
     prompt = GRADE_PROMPT.format(question=question, context=context)
+    print(f"Grading prompt: {prompt}")
     response = (
-        grader_model
+        response_model
         .with_structured_output(GradeDocuments).invoke(
             [{"role": "user", "content": prompt}]
         )
@@ -138,7 +147,10 @@ def generate_answer(state: MessagesState):
     question = state["messages"][0].content
     context = state["messages"][-1].content
     prompt = GENERATE_PROMPT.format(question=question, context=context)
+    print(f"Answer generation prompt: {prompt}")
     response = response_model.invoke([{"role": "user", "content": prompt}])
+    print(f"Generated answer: {response.content}")
+    # Return the response as a message
     return {"messages": [response]}
 
 workflow = StateGraph(MessagesState)
@@ -178,22 +190,14 @@ graph = workflow.compile()
 with open("workflow.png", "wb") as f:
     f.write(graph.get_graph().draw_mermaid_png())
 
-# for chunk in graph.stream(
-#     {
-#         "messages": [
-#             {
-#                 "role": "user",
-#                 "content": "What do the guidelines say about success criteria for REST APIs?",
-#             }
-#         ]
-#     }
-# ):
-#     for node, update in chunk.items():
-#         print("Update from node", node)
-#         update["messages"][-1].pretty_print()
-#         print("\n\n")
-
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # You can restrict this to your frontend domain
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 FastAPIInstrumentor().instrument_app(app)
 
 # Prometheus metrics
@@ -220,7 +224,11 @@ async def chat(request: Request):
     async for chunk in graph.astream({"messages": lc_messages}):
         for node, update in chunk.items():
             if update["messages"]:
-                answer = update["messages"][-1].content
+                last_msg = update["messages"][-1]
+                if isinstance(last_msg, dict):
+                    answer = last_msg.get("content", "")
+                else:
+                    answer = getattr(last_msg, "content", str(last_msg))
     CHAT_RESPONSES.inc()
     return JSONResponse({"answer": answer or "No answer generated."})
 

@@ -1,28 +1,16 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { useAuth } from './AuthProvider';
+import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { sendMessage } from '../lib/api';
 
-export function ChatPage({ conversationId }: { conversationId: string }) {
+export function ChatPage({ conversationId }: Readonly<{ conversationId: string }>) {
   const [messages, setMessages] = useState<{ role: string; content: string }[]>([]);
   const [input, setInput] = useState('');
-  const { token } = useAuth();
-  const wsRef = useRef<WebSocket | null>(null);
 
-  useEffect(() => {
-    wsRef.current = new WebSocket(`${import.meta.env.VITE_API_URL.replace('http', 'ws')}/chat/ws?user_id=${conversationId}`);
-    wsRef.current.onmessage = (event) => {
-      setMessages((msgs) => [...msgs, { role: 'assistant', content: event.data }]);
-    };
-    return () => {
-      wsRef.current?.close();
-    };
-  }, [conversationId]);
-
-  const send = () => {
-    if (wsRef.current && input.trim()) {
+  const send = async () => {
+    if (input.trim()) {
       setMessages((msgs) => [...msgs, { role: 'user', content: input }]);
-      wsRef.current.send(input);
+      const res = await sendMessage(conversationId, input);
+      setMessages((msgs) => [...msgs, { role: 'assistant', content: res.answer || '' }]);
       setInput('');
     }
   };
@@ -31,7 +19,7 @@ export function ChatPage({ conversationId }: { conversationId: string }) {
     <div className="flex flex-col flex-1 p-4">
       <div className="flex-1 overflow-y-auto mb-4">
         {messages.map((msg, i) => (
-          <div key={i} className={msg.role === 'user' ? 'text-right' : 'text-left'}>
+          <div key={`${msg.role}-${msg.content}-${i}`} className={msg.role === 'user' ? 'text-right' : 'text-left'}>
             <ReactMarkdown>{msg.content}</ReactMarkdown>
           </div>
         ))}
