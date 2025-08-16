@@ -59,19 +59,27 @@ retriever_tool = create_retriever_tool(
 response_model = init_chat_model("openai:gpt-4.1", temperature=0)
 
 
+def get_message_role_content(m):
+    if isinstance(m, dict):
+        role = m.get("role", "user")
+        content = m.get("content", str(m))
+    else:
+        role = getattr(m, "type", "user")
+        content = getattr(m, "content", str(m))
+    return f"{role}: {content}"
+
+
 def generate_query_or_respond(state: MessagesState):
     """Call the model to generate a response based on the current state. Given
     the question, it will decide to retrieve using the retriever tool, or simply respond to the user.
-    """
-
-    question = state["messages"][0].content
-    print(f"User question: {question}")
-
+    Now uses the full message history for context."""
+    # Use all messages for context
+    messages = state["messages"]
+    print(f"User messages: {[m.content for m in messages]}")
     response = (
         response_model
-        .bind_tools([retriever_tool]).invoke(state["messages"])
+        .bind_tools([retriever_tool]).invoke(messages)
     )
-
     print(f"Response from model: {response}")
     return {"messages": [response]}
 
@@ -95,20 +103,23 @@ class GradeDocuments(BaseModel):
 def grade_documents(
     state: MessagesState,
 ) -> Literal["generate_answer", "rewrite_question"]:
-    """Determine whether the retrieved documents are relevant to the question."""
-    question = state["messages"][0].content
-    context = state["messages"][-1].content
-
-    prompt = GRADE_PROMPT.format(question=question, context=context)
+    """Determine whether the retrieved documents are relevant to the question, using full history."""
+    messages = state["messages"]
+    question = messages[0].content
+    context = messages[-1].content
+    history_text = "\n".join([get_message_role_content(m) for m in messages[:-1]])
+    prompt = (
+        GRADE_PROMPT +
+        (f"\nConversation history:\n{history_text}" if history_text else "")
+    ).format(question=question, context=context)
     print(f"Grading prompt: {prompt}")
-    response = (
-        response_model
-        .with_structured_output(GradeDocuments).invoke(
-            [{"role": "user", "content": prompt}]
-        )
+    response = response_model.with_structured_output(GradeDocuments).invoke(
+        [{"role": "user", "content": prompt}]
     )
-    score = response.binary_score
-
+    # Fix: Access binary_score correctly for both dict and BaseModel
+    score = getattr(response, "binary_score", None)
+    if score is None and isinstance(response, dict):
+        score = response.get("binary_score")
     if score == "yes":
         return "generate_answer"
     else:
@@ -125,10 +136,13 @@ REWRITE_PROMPT = (
 
 
 def rewrite_question(state: MessagesState):
-    """Rewrite the original user question."""
+    """Rewrite the original user question, using full history."""
     messages = state["messages"]
-    question = messages[0].content
-    prompt = REWRITE_PROMPT.format(question=question)
+    history_text = "\n".join([get_message_role_content(m) for m in messages])
+    prompt = (
+        REWRITE_PROMPT +
+        f"\nConversation history:\n{history_text}"
+    ).format(question=messages[0].content)
     response = response_model.invoke([{"role": "user", "content": prompt}])
     return {"messages": [{"role": "user", "content": response.content}]}
 
@@ -143,10 +157,15 @@ GENERATE_PROMPT = (
 
 
 def generate_answer(state: MessagesState):
-    """Generate an answer."""
-    question = state["messages"][0].content
-    context = state["messages"][-1].content
-    prompt = GENERATE_PROMPT.format(question=question, context=context)
+    """Generate an answer, using full history."""
+    messages = state["messages"]
+    question = messages[0].content
+    context = messages[-1].content
+    history_text = "\n".join([get_message_role_content(m) for m in messages])
+    prompt = (
+        GENERATE_PROMPT +
+        f"\nConversation history:\n{history_text}"
+    ).format(question=question, context=context)
     print(f"Answer generation prompt: {prompt}")
     response = response_model.invoke([{"role": "user", "content": prompt}])
     print(f"Generated answer: {response.content}")
