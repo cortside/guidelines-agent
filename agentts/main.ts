@@ -1,13 +1,10 @@
 import { ChatOpenAI, OpenAIEmbeddings } from "@langchain/openai";
 import { MemoryVectorStore } from "langchain/vectorstores/memory";
-import { Document } from "@langchain/core/documents";
-import { Annotation, StateGraph } from "@langchain/langgraph";
 import { writeFile } from "fs/promises";
 import { DocumentLoader } from "./DocumentLoader.js";
 import { PromptTemplates } from "./PromptTemplates.js";
-import "cheerio";
-import { z } from "zod";
-import { Workflow } from "./Workflow.js";
+import { WorkflowTools } from "./WorkflowTools.js";
+import { AIMessage,  HumanMessage,  SystemMessage,  ToolMessage } from "@langchain/core/messages";
 
 const llm = new ChatOpenAI({
   model: "gpt-4o-mini",
@@ -40,21 +37,56 @@ await vectorStore.addDocuments(splits)
 const promptTemplate = PromptTemplates.ragPromptTemplate;
 
 // write the graph to a file
-const graph = Workflow.create(vectorStore, llm, promptTemplate);
+const graph = WorkflowTools.create(vectorStore, llm, promptTemplate);
 const image = await graph.getGraph().drawMermaidPng();
 const arrayBuffer = await image.arrayBuffer();
 // output graph as image
 await writeFile("workflow.png", Buffer.from(arrayBuffer));
 
-let inputs = {
-  question: "What does the end of any document say about REST?",
+import { BaseMessage, isAIMessage } from "@langchain/core/messages";
+
+const prettyPrint = (message: BaseMessage) => {
+  let txt = `[${message._getType()}]: ${message.content}`;
+  if ((isAIMessage(message) && message.tool_calls?.length) || 0 > 0) {
+    const tool_calls = (message as AIMessage)?.tool_calls
+      ?.map((tc) => `- ${tc.name}(${JSON.stringify(tc.args)})`)
+      .join("\n");
+    txt += ` \nTools: \n${tool_calls}`;
+  }
+  console.log(txt);
 };
 
-console.log(inputs);
-console.log("\n====\n");
-for await (const chunk of await graph.stream(inputs, {
-  streamMode: "updates",
+let inputs1 = { messages: [{ role: "user", content: "Hello" }] };
+
+for await (const step of await graph.stream(inputs1, {
+  streamMode: "values",
 })) {
-  console.log(chunk);
-  console.log("\n====\n");
+  const lastMessage = step.messages[step.messages.length - 1];
+  prettyPrint(lastMessage);
+  console.log("-----\n");
+}
+
+// let inputs = {
+//   question: "What does the end of any document say about REST?",
+// };
+
+// console.log(inputs);
+// console.log("\n====\n");
+// for await (const chunk of await graph.stream(inputs, {
+//   streamMode: "updates",
+// })) {
+//   console.log(chunk);
+//   console.log("\n====\n");
+// }
+
+let inputs2 = {
+  messages: [{ role: "user", content: "What does the end of any document say about REST?" }],
+};
+
+for await (const step of await graph.stream(inputs2, {
+  streamMode: "values",
+})) {
+  const lastMessage = step.messages[step.messages.length - 1];
+  prettyPrint(lastMessage);
+  console.log("-----\n");
 }

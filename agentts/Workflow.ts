@@ -1,8 +1,9 @@
 import { MemoryVectorStore } from "langchain/vectorstores/memory";
 import { ChatOpenAI } from "@langchain/openai";
 import { Document } from "@langchain/core/documents";
-import { Annotation, StateGraph } from "@langchain/langgraph";
+import { Annotation, MessagesAnnotation, StateGraph } from "@langchain/langgraph";
 import { z } from "zod";
+import { tool } from "@langchain/core/tools";
 
 export class Workflow {
     static create(vectorStore: MemoryVectorStore, llm: ChatOpenAI, promptTemplate: any) {
