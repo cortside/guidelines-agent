@@ -1,0 +1,22 @@
+{
+  "type": "module",
+  "dependencies": {
+    "@langchain/community": "^0.3.53",
+    "@langchain/core": "^0.3.72",
+    "@langchain/langgraph": "^0.4.6",
+    "cheerio": "^1.0.0-rc.12",
+    "langchain": "^0.3.31",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@langchain/openai": "^0.6.9",
+    "eslint": "^8.56.0",
+    "ts-node": "^10.9.2"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/main.js",
+    "dev": "node --loader ts-node/esm main.ts",
+    "lint": "eslint . --ext .ts,.tsx"
+  }
+}

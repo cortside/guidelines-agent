@@ -35,6 +35,7 @@ urls = [
 print(f"Loading documents from URLs: {len(urls)}")
 docs = [WebBaseLoader(url).load() for url in urls]
 
+# Flatten the list of lists into a single list of documents
 docs_list = [item for sublist in docs for item in sublist]
 
 text_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
