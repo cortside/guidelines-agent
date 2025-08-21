@@ -1,12 +1,21 @@
 import { MemoryVectorStore } from "langchain/vectorstores/memory";
 import { ChatOpenAI } from "@langchain/openai";
 import { Document } from "@langchain/core/documents";
-import { Annotation, MessagesAnnotation, StateGraph } from "@langchain/langgraph";
+import {
+  Annotation,
+  MessagesAnnotation,
+  StateGraph,
+} from "@langchain/langgraph";
 import { z } from "zod";
 import { tool } from "@langchain/core/tools";
-import { AIMessage,  HumanMessage,  SystemMessage,  ToolMessage } from "@langchain/core/messages";
+import {
+  AIMessage,
+  HumanMessage,
+  SystemMessage,
+  ToolMessage,
+} from "@langchain/core/messages";
 import { ToolNode, toolsCondition } from "@langchain/langgraph/prebuilt";
-
+import { MemorySaver } from "@langchain/langgraph";
 
 export class WorkflowTools {
   static create(
@@ -14,15 +23,33 @@ export class WorkflowTools {
     llm: ChatOpenAI,
     promptTemplate: any
   ) {
-    const retrieveSchema = z.object({ query: z.string() });
+    const searchSchema = z.object({
+      query: z.string().describe("Search query to run."),
+      section: z
+        .enum(["beginning", "middle", "end"])
+        .nullable()
+        .describe("Optional section to query. Should be null if not specified."),
+    });
 
     const retrieve = tool(
-      async ({ query }) => {
-        const retrievedDocs = await vectorStore.similaritySearch(query, 2);
+      async (search: z.infer<typeof searchSchema>) => {
+        let retrievedDocs;
+        if (search.section !== null) {
+          const filter = (doc: Document) =>
+            doc.metadata.section === search.section;
+          retrievedDocs = await vectorStore.similaritySearch(
+            search.query,
+            3,
+            filter
+          );
+        } else {
+          retrievedDocs = await vectorStore.similaritySearch(search.query, 3);
+        }
+
         const serialized = retrievedDocs
           .map(
             (doc) =>
-              `Source: ${doc.metadata.source}\nContent: ${doc.pageContent}`
+              `Source: ${doc.metadata.source}[${doc.metadata.loc.lines.from}-${doc.metadata.loc.lines.to}]\nContent: ${doc.pageContent}`
           )
           .join("\n");
         return [serialized, retrievedDocs];
@@ -30,7 +57,7 @@ export class WorkflowTools {
       {
         name: "retrieve",
         description: "Retrieve information related to a query.",
-        schema: retrieveSchema,
+        schema: searchSchema,
         responseFormat: "content_and_artifact",
       }
     );
@@ -93,12 +120,13 @@ export class WorkflowTools {
       .addNode("generate", generate)
       .addEdge("__start__", "queryOrRespond")
       .addConditionalEdges("queryOrRespond", toolsCondition, {
-        __end__: "__end__",
-        tools: "tools",
-      })
+            __end__: "__end__",
+            tools: "tools",
+          })
       .addEdge("tools", "generate")
       .addEdge("generate", "__end__");
 
-    return graphBuilder.compile();
+    const checkpointer = new MemorySaver();
+    return graphBuilder.compile({ checkpointer });
   }
 }
