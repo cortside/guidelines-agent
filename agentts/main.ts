@@ -5,11 +5,14 @@ import { DocumentLoader } from "./DocumentLoader.js";
 import { PromptTemplates } from "./PromptTemplates.js";
 import { WorkflowTools } from "./WorkflowTools.js";
 import {
-  AIMessage,
   HumanMessage,
   SystemMessage,
-  ToolMessage,
+  isAIMessage,
+  BaseMessage,
 } from "@langchain/core/messages";
+import express from "express";
+import bodyParser from "body-parser";
+import { v4 as uuidv4 } from "uuid";
 
 const llm = new ChatOpenAI({
   model: "gpt-4o-mini",
@@ -48,24 +51,20 @@ const arrayBuffer = await image.arrayBuffer();
 // output graph as image
 await writeFile("workflow.png", Buffer.from(arrayBuffer));
 
-import { BaseMessage, isAIMessage } from "@langchain/core/messages";
-
 const prettyPrint = (message: BaseMessage) => {
   const contentStr =
     typeof message.content === "object"
       ? JSON.stringify(message.content)
       : message.content;
   let txt = `[${message.getType()}]: ${contentStr}`;
-  if ((isAIMessage(message) && message.tool_calls?.length) || 0 > 0) {
-    const tool_calls = (message as AIMessage)?.tool_calls
+  if (isAIMessage(message) && (message.tool_calls?.length ?? 0) > 0) {
+    const tool_calls = message.tool_calls
       ?.map((tc) => `- ${tc.name}(${JSON.stringify(tc.args)})`)
       .join("\n");
     txt += ` \nTools: \n${tool_calls}`;
   }
-
   // show token usage
   //txt += `\nTokens: ${message.usage_metadata?.total_tokens ?? "unknown"}`;
-
   console.log(txt);
 };
 
@@ -99,7 +98,6 @@ Always say "So says the good book, The First Book of Cort. Anything else i can f
   for await (const step of await graph.stream(inputs, threadConfig)) {
     const lastMessage = step.messages[step.messages.length - 1];
     prettyPrint(lastMessage);
-    //console.log(JSON.stringify(lastMessage));
     console.log("-----\n");
   }
 }
@@ -112,11 +110,46 @@ await callGraph("abc123", "What do the documents say about REST?");
 await callGraph("abc123", "What does the end of any document say about REST?");
 */
 
-import { v4 as uuidv4 } from "uuid";
-
 const threadId = uuidv4();
 await callGraph(threadId, "What is REST?");
 await callGraph(threadId, "What are the levels?");
 
 // const threadId2 = uuidv4();
 // await callGraph(threadId2, "What is REST?  Once you get that answer, what are the levels?");
+
+const app = express();
+app.use(bodyParser.json());
+
+app.post("/chat", async (req: express.Request, res: express.Response) => {
+  const { threadId, message } = req.body;
+  if (typeof threadId !== "string" || typeof message !== "string") {
+    return res
+      .status(400)
+      .json({ error: "threadId and message must be strings" });
+  }
+  try {
+    let answer = "";
+    // Capture prettyPrint output
+    const originalConsoleLog = console.log;
+    let output = "";
+    console.log = (txt) => {
+      output += txt + "\n";
+    };
+    await callGraph(threadId, message);
+    console.log = originalConsoleLog;
+    answer = output.trim();
+    res.json({ answer });
+  } catch (err) {
+    const errorMsg = (err && typeof err === "object" && "message" in err) ? (err as { message?: string }).message ?? "Internal server error" : "Internal server error";
+    res.status(500).json({ error: errorMsg });
+  }
+});
+
+app.get("/health", (req: express.Request, res: express.Response) => {
+  res.json({ status: "ok" });
+});
+
+const port = process.env.PORT || 8002;
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
+});
