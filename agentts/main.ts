@@ -3,7 +3,7 @@ import { MemoryVectorStore } from "langchain/vectorstores/memory";
 import { writeFile } from "fs/promises";
 import { DocumentLoader } from "./DocumentLoader.js";
 import { PromptTemplates } from "./PromptTemplates.js";
-import { WorkflowTools } from "./WorkflowTools.js";
+import { Workflow } from "./Workflow.js";
 import {
   HumanMessage,
   SystemMessage,
@@ -26,18 +26,42 @@ const embeddings = new OpenAIEmbeddings({
 const vectorStore = new MemoryVectorStore(embeddings);
 
 const urls: string[] = [
-  "https://raw.githubusercontent.com/cortside/guidelines/refs/heads/master/docs/rest/BestPractices.md",
-  "https://raw.githubusercontent.com/cortside/guidelines/refs/heads/master/docs/rest/Representation.md",
-  "https://raw.githubusercontent.com/cortside/guidelines/refs/heads/master/docs/rest/Resource.md",
-  "https://raw.githubusercontent.com/cortside/guidelines/refs/heads/master/docs/rest/Errors.md",
-  "https://raw.githubusercontent.com/cortside/guidelines/refs/heads/master/docs/architecture/REST.md",
-  "https://raw.githubusercontent.com/cortside/guidelines/refs/heads/master/docs/architecture/TokenExchange.md",
-  "https://raw.githubusercontent.com/cortside/guidelines/refs/heads/master/docs/rest/HTTPStatusCodes.md",
+    "https://raw.githubusercontent.com/cortside/guidelines/refs/heads/master/docs/architecture/Messaging.md",
+    "https://raw.githubusercontent.com/cortside/guidelines/refs/heads/master/docs/architecture/Microservices.md",
+    "https://raw.githubusercontent.com/cortside/guidelines/refs/heads/master/docs/architecture/Observability.md",
+    "https://raw.githubusercontent.com/cortside/guidelines/refs/heads/master/docs/architecture/README.md",
+    "https://raw.githubusercontent.com/cortside/guidelines/refs/heads/master/docs/architecture/References.md",
+    "https://raw.githubusercontent.com/cortside/guidelines/refs/heads/master/docs/architecture/REST.md",
+    "https://raw.githubusercontent.com/cortside/guidelines/refs/heads/master/docs/architecture/Security.md",
+    "https://raw.githubusercontent.com/cortside/guidelines/refs/heads/master/docs/architecture/TokenExchange.md",
+    "https://raw.githubusercontent.com/cortside/guidelines/refs/heads/master/docs/csharp/CodingStandards.md",
+    "https://raw.githubusercontent.com/cortside/guidelines/refs/heads/master/docs/csharp/PackageAndSymbolServerSetup.md",
+    "https://raw.githubusercontent.com/cortside/guidelines/refs/heads/master/docs/csharp/README.md",
+    "https://raw.githubusercontent.com/cortside/guidelines/refs/heads/master/docs/csharp/Rounding.md",
+    "https://raw.githubusercontent.com/cortside/guidelines/refs/heads/master/docs/csharp/update-net6.0.md",
+    "https://raw.githubusercontent.com/cortside/guidelines/refs/heads/master/docs/git/README.md",
+    "https://raw.githubusercontent.com/cortside/guidelines/refs/heads/master/docs/rest/BestPractices.md",
+    "https://raw.githubusercontent.com/cortside/guidelines/refs/heads/master/docs/rest/DateTime.md",
+    "https://raw.githubusercontent.com/cortside/guidelines/refs/heads/master/docs/rest/Errors.md",
+    "https://raw.githubusercontent.com/cortside/guidelines/refs/heads/master/docs/rest/HealthCheck.md",
+    "https://raw.githubusercontent.com/cortside/guidelines/refs/heads/master/docs/rest/HTTPStatusCodes.md",
+    "https://raw.githubusercontent.com/cortside/guidelines/refs/heads/master/docs/rest/OpenAPI.md",
+    "https://raw.githubusercontent.com/cortside/guidelines/refs/heads/master/docs/rest/README.md",
+    "https://raw.githubusercontent.com/cortside/guidelines/refs/heads/master/docs/rest/Representation.md",
+    "https://raw.githubusercontent.com/cortside/guidelines/refs/heads/master/docs/rest/Resource.md",
+    "https://raw.githubusercontent.com/cortside/guidelines/refs/heads/master/docs/scrum/README.md",
+    "https://raw.githubusercontent.com/cortside/guidelines/refs/heads/master/docs/scrum/user-stories.md",
+    "https://raw.githubusercontent.com/cortside/guidelines/refs/heads/master/docs/sql/README.md",
+    "https://raw.githubusercontent.com/cortside/guidelines/refs/heads/master/docs/template/README.md",
+    "https://raw.githubusercontent.com/cortside/guidelines/refs/heads/master/docs/template/TemplateApi.md",
+    "https://raw.githubusercontent.com/cortside/guidelines/refs/heads/master/docs/template/WebApiStarter.md",
+    "https://raw.githubusercontent.com/cortside/guidelines/refs/heads/master/docs/README.md",
 ];
 console.log(`URLs to be loaded: ${urls.length}`);
 
 const loader = new DocumentLoader();
 const splits = await loader.splitDocumentsFromUrls(urls);
+console.log(`Document tags identified: ${loader.tags.length}`);
 
 // Index chunks
 await vectorStore.addDocuments(splits);
@@ -45,7 +69,7 @@ await vectorStore.addDocuments(splits);
 const promptTemplate = PromptTemplates.ragPromptTemplate;
 
 // write the graph to a file
-const graph = WorkflowTools.create(vectorStore, llm, promptTemplate);
+const graph = Workflow.create(vectorStore, llm, promptTemplate);
 const image = await graph.getGraph().drawMermaidPng();
 const arrayBuffer = await image.arrayBuffer();
 // output graph as image
@@ -63,12 +87,12 @@ const prettyPrint = (message: BaseMessage) => {
       .join("\n");
     txt += ` \nTools: \n${tool_calls}`;
   }
-  // show token usage
+  // TODO: show token usage
   //txt += `\nTokens: ${message.usage_metadata?.total_tokens ?? "unknown"}`;
   console.log(txt);
 };
 
-async function callGraph(thread_id: string, content: string) {
+async function callGraph(thread_id: string, content: string): Promise<string> {
   // Specify an ID for the thread
   const threadConfig = {
     configurable: { thread_id: thread_id },
@@ -82,24 +106,29 @@ async function callGraph(thread_id: string, content: string) {
   if (!history.done && history.value) {
     // thread already exists
   } else {
-    console.log(`Creating new thread with ID ${thread_id}.`);
+    console.log(`Creating new thread with ID: ${thread_id}`);
     inputs.messages.push(
       new SystemMessage(
         `You are an assistant for question-answering tasks. Use the provided context to answer user questions.  
-You have access to a retrieve tool and should rely on that for source of context.  If the user does not specify a section (beginning, middle, end) use null.
+You have access to a retrieve tool and should rely on that for source of context.  The question should be analyzed for topical keywords and functional categories to be used to search against tags.  The following tags are valid: [${loader.tags.join(", ")}]
 If you don't know the answer, just say that you don't know, don't try to make up an answer.
-Use three sentences maximum and keep the answer as concise as possible.
+Use five sentences maximum and keep the answer as concise as possible.
 Always say "So says the good book, The First Book of Cort. Anything else i can f'ing do for ya?" at the end of the answer.`
       )
     );
   }
 
   inputs.messages.push(new HumanMessage(content));
+  let lastMessage: BaseMessage | undefined;
   for await (const step of await graph.stream(inputs, threadConfig)) {
-    const lastMessage = step.messages[step.messages.length - 1];
-    prettyPrint(lastMessage);
-    console.log("-----\n");
+    lastMessage = step.messages[step.messages.length - 1];
   }
+  if (lastMessage) {
+    return typeof lastMessage.content === "string"
+      ? lastMessage.content
+      : JSON.stringify(lastMessage.content);
+  }
+  return "No response from AI.";
 }
 
 /*
@@ -110,9 +139,9 @@ await callGraph("abc123", "What do the documents say about REST?");
 await callGraph("abc123", "What does the end of any document say about REST?");
 */
 
-const threadId = uuidv4();
-await callGraph(threadId, "What is REST?");
-await callGraph(threadId, "What are the levels?");
+//const threadId = uuidv4();
+//await callGraph(threadId, "What is REST?");
+//await callGraph(threadId, "What are the levels?");
 
 // const threadId2 = uuidv4();
 // await callGraph(threadId2, "What is REST?  Once you get that answer, what are the levels?");
@@ -128,16 +157,7 @@ app.post("/chat", async (req: express.Request, res: express.Response) => {
       .json({ error: "threadId and message must be strings" });
   }
   try {
-    let answer = "";
-    // Capture prettyPrint output
-    const originalConsoleLog = console.log;
-    let output = "";
-    console.log = (txt) => {
-      output += txt + "\n";
-    };
-    await callGraph(threadId, message);
-    console.log = originalConsoleLog;
-    answer = output.trim();
+    const answer = await callGraph(threadId, message);
     res.json({ answer });
   } catch (err) {
     const errorMsg = (err && typeof err === "object" && "message" in err) ? (err as { message?: string }).message ?? "Internal server error" : "Internal server error";
@@ -147,6 +167,45 @@ app.post("/chat", async (req: express.Request, res: express.Response) => {
 
 app.get("/health", (req: express.Request, res: express.Response) => {
   res.json({ status: "ok" });
+});
+
+app.get("/threads/:threadId", async (req: express.Request, res: express.Response) => {
+  const threadId = req.params.threadId;
+  if (typeof threadId !== "string" || !threadId) {
+    return res.status(400).json({ error: "threadId must be a string" });
+  }
+  try {
+    const threadConfig = {
+      configurable: { thread_id: threadId },
+      streamMode: "values" as const,
+    };
+    const history = await graph.getStateHistory(threadConfig).next();
+    if (history.done || !history.value) {
+      return res.status(404).json({ error: "Thread not found" });
+    }
+
+    // Extract messages from history.value.values.messages
+    let allMessages: any[] = [];
+    if (history.value?.values?.messages && Array.isArray(history.value.values.messages)) {
+      allMessages = history.value.values.messages;
+    }
+    const annotated = allMessages.map(msg => {
+      let type = msg.getType();
+      let content = msg.content || '';
+      // If content is empty and there are tool calls, format them
+      if (content === '' && Array.isArray(msg.tool_calls) && msg.tool_calls.length > 0) {
+        content = msg.tool_calls.map((tc: { args: any; name: any; }) => {
+          const args = typeof tc.args === 'object' ? JSON.stringify(tc.args) : tc.args;
+          return `${tc.name}: ${args}`;
+        }).join('\n');
+      }
+      return { id: msg.id, type, content };
+    });
+    res.json({ messages: annotated });
+  } catch (err) {
+    const errorMsg = (err && typeof err === "object" && "message" in err) ? (err as { message?: string }).message ?? "Internal server error" : "Internal server error";
+    res.status(500).json({ error: errorMsg });
+  }
 });
 
 const port = process.env.PORT || 8002;

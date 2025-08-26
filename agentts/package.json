@@ -10,10 +10,10 @@
     "cheerio": "^1.0.0-rc.12",
     "express": "^5.1.0",
     "langchain": "^0.3.31",
-    "zod": "^3.25.76"
+    "zod": "^3.25.76",
+    "@langchain/openai": "^0.6.9"
   },
   "devDependencies": {
-    "@langchain/openai": "^0.6.9",
     "eslint": "^8.56.0",
     "ts-node": "^10.9.2"
   },
