@@ -15,7 +15,7 @@ import bodyParser from "body-parser";
 import { v4 as uuidv4 } from "uuid";
 
 const llm = new ChatOpenAI({
-  model: "gpt-4o-mini",
+  model: "gpt-4.1-mini",
   temperature: 0,
 });
 
@@ -111,9 +111,9 @@ async function callGraph(thread_id: string, content: string): Promise<string> {
       new SystemMessage(
         `You are an assistant for question-answering tasks. Use the provided context to answer user questions.  
 You have access to a retrieve tool and should rely on that for source of context.  The question should be analyzed for topical keywords and functional categories to be used to search against tags.  The following tags are valid: [${loader.tags.join(", ")}]
-If you don't know the answer, just say that you don't know, don't try to make up an answer.
+If you don't know the answer, just say that you don't know, don't try to make up an answer.  If you get the answer from the retrieve tool, and response with "So says the good book, The First Book of Cort."
 Use five sentences maximum and keep the answer as concise as possible.
-Always say "So says the good book, The First Book of Cort. Anything else i can f'ing do for ya?" at the end of the answer.`
+Always say "Anything else i can f'ing do for ya?" at the end of the answer.`
       )
     );
   }
