@@ -4,14 +4,15 @@
     "@langchain/community": "^0.3.53",
     "@langchain/core": "^0.3.72",
     "@langchain/langgraph": "^0.4.6",
+    "@langchain/openai": "^0.6.9",
     "@types/body-parser": "^1.19.6",
     "@types/express": "^5.0.3",
     "body-parser": "^2.2.0",
     "cheerio": "^1.0.0-rc.12",
+    "chromadb": "^3.0.14",
     "express": "^5.1.0",
     "langchain": "^0.3.31",
-    "zod": "^3.25.76",
-    "@langchain/openai": "^0.6.9"
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "eslint": "^8.56.0",
