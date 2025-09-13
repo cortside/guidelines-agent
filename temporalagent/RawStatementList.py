@@ -1,5 +1,5 @@
 # This model is a container for the list of statements from one chunk
-from temporalagent.RawStatement import RawStatement
+from RawStatement import RawStatement
 
 
 from pydantic import BaseModel

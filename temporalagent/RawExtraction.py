@@ -1,5 +1,5 @@
-from temporalagent.RawTriplet import RawTriplet
-from temporalagent.RawEntity import RawEntity
+from RawTriplet import RawTriplet
+from RawEntity import RawEntity
 
 
 from pydantic import BaseModel

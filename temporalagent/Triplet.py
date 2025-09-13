@@ -1,4 +1,4 @@
-from temporalagent.Predicate import Predicate
+from Predicate import Predicate
 
 
 from pydantic import BaseModel, Field
