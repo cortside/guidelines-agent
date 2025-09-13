@@ -52,7 +52,11 @@ Output only a comma-separated list of tags, with no extra text, explanations, or
 
     // generate meta tags for each document
     for (const doc of docs) {
-      doc.metadata["tags"] = await this.generateMetaTags(doc.pageContent);
+      const tags = await this.generateMetaTags(doc.pageContent);
+      // Convert tags array to comma-separated string for ChromaDB compatibility
+      doc.metadata["tags"] = tags.join(", ");
+      // Also store as array for internal use (in a separate field)
+      //doc.metadata["tagsArray"] = tags;
     }
 
     // Flatten the array of arrays

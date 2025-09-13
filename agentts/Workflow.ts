@@ -16,10 +16,11 @@ import {
 } from "@langchain/core/messages";
 import { ToolNode, toolsCondition } from "@langchain/langgraph/prebuilt";
 import { MemorySaver } from "@langchain/langgraph";
+import { VectorStore } from "@langchain/core/vectorstores";
 
 export class Workflow {
   static create(
-    vectorStore: MemoryVectorStore,
+    vectorStore: VectorStore,
     llm: ChatOpenAI,
     promptTemplate: any
   ) {
@@ -28,7 +29,7 @@ export class Workflow {
       tags: z
         .array(z.string())
         .describe(
-          "Optional functional and topical tags that describe the document to filter by."
+          "Required Functional and topical tags that describe the users query."
         ),
     });
 
@@ -71,27 +72,43 @@ export class Workflow {
 
     const retrieve = tool(
       async (search: z.infer<typeof searchSchema>) => {
-        let retrievedDocs;
+        const retrievedDocs = await vectorStore.similaritySearch(
+          search.query,
+          9
+        );
+        console.log(`Retrieved ${retrievedDocs.length} documents`);
+
+        let filteredDocs = retrievedDocs;
         if (search.tags !== null && search.tags.length > 0) {
-          const filter = (doc: Document) => {
-            const tags = Array.isArray(doc.metadata.tags)
-              ? doc.metadata.tags
-              : [];
-            return search.tags.some((tag) => tags.includes(tag));
-          };
-          retrievedDocs = await vectorStore.similaritySearch(
-            search.query,
-            9,
-            filter
-          );
+          console.log(`Filtering by tags: ${search.tags.join(", ")}`);
+
+          filteredDocs = retrievedDocs.filter((doc) => {
+            if (!doc.metadata.tags) return false;
+            const docTags = doc.metadata.tags
+              .split(",")
+              .map((tag: string) => tag.trim().toLowerCase());
+            return search.tags.some((tag) =>
+              docTags.includes(tag.toLowerCase())
+            );
+          });
         } else {
-          retrievedDocs = await vectorStore.similaritySearch(search.query, 3);
+          console.log("No tags specified, performing unfiltered search.");
         }
+
+        // enumerate retrieved docs
+        console.log(`Filtered ${filteredDocs.length} documents`);
+        filteredDocs.forEach((doc, i) => {
+          console.log(
+            `Retrieved Doc${i + 1}: ${doc.metadata.source.slice(0, 20)} [${
+              doc.metadata.loc.lines.from
+            }-${doc.metadata.loc.lines.to}] Tags: ${doc.metadata.tags}`
+          );
+        });
 
         const selectedDocs = await getRankedDocuments(
           llm,
           search.query,
-          retrievedDocs,
+          filteredDocs,
           3
         );
 
