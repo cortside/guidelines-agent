@@ -4,7 +4,7 @@ import { ChatOpenAI } from "@langchain/openai";
 
 export class DocumentLoader {
   private readonly llm: ChatOpenAI;
-  private readonly allTags: string[] = [];
+  public allTags: string[] = [];
 
   constructor() {
     this.llm = new ChatOpenAI({
@@ -54,7 +54,8 @@ Output only a comma-separated list of tags, with no extra text, explanations, or
     for (const doc of docs) {
       const tags = await this.generateMetaTags(doc.pageContent);
       // Convert tags array to comma-separated string for ChromaDB compatibility
-      doc.metadata["tags"] = tags.join(", ");
+      //doc.metadata["tags"] = tags.join(", ");
+      doc.metadata["tags"] = tags;
       // Also store as array for internal use (in a separate field)
       //doc.metadata["tagsArray"] = tags;
     }

@@ -40,6 +40,7 @@ export class Workflow {
       docs: Document[],
       topN: number
     ): Promise<Document[]> {
+      console.log(`Ranking ${docs.length} documents for query: "${query}"`);
       if (docs.length <= topN) return docs;
 
       // Prepare a prompt for ranking
@@ -72,9 +73,21 @@ export class Workflow {
 
     const retrieve = tool(
       async (search: z.infer<typeof searchSchema>) => {
+        const filter = (doc: Document) => {
+          const tags = Array.isArray(doc.metadata.tags)
+            ? doc.metadata.tags
+            : [];
+
+          console.log(`Doc tags: ${tags.join(", ")}`);
+          const hasTags = search.tags.some((tag) => tags.includes(tag));
+          console.log(`Doc has required tags: ${hasTags}`);
+          return hasTags;
+        };
+
         const retrievedDocs = await vectorStore.similaritySearch(
           search.query,
-          9
+          9,
+          filter
         );
         console.log(`Retrieved ${retrievedDocs.length} documents`);
 
@@ -83,14 +96,16 @@ export class Workflow {
           console.log(`Filtering by tags: ${search.tags.join(", ")}`);
 
           filteredDocs = retrievedDocs.filter((doc) => {
+            console.log(`Doc tags: [${doc.metadata.source}] ${doc.metadata.tags.join(", ")}`);
             if (!doc.metadata.tags) return false;
             const docTags = doc.metadata.tags
-              .split(",")
               .map((tag: string) => tag.trim().toLowerCase());
             return search.tags.some((tag) =>
               docTags.includes(tag.toLowerCase())
             );
           });
+
+          console.log(`After filtering, ${filteredDocs.length} documents remain.`);
         } else {
           console.log("No tags specified, performing unfiltered search.");
         }
@@ -98,10 +113,11 @@ export class Workflow {
         // enumerate retrieved docs
         console.log(`Filtered ${filteredDocs.length} documents`);
         filteredDocs.forEach((doc, i) => {
+          const sourceSlice = doc.metadata.source ? doc.metadata.source.slice(0, 20) : 'Unknown';
+          const lines = doc.metadata.loc?.lines ? `[${doc.metadata.loc.lines.from}-${doc.metadata.loc.lines.to}]` : '[No line info]';
+          const tags = doc.metadata.tags ? doc.metadata.tags : [];
           console.log(
-            `Retrieved Doc${i + 1}: ${doc.metadata.source.slice(0, 20)} [${
-              doc.metadata.loc.lines.from
-            }-${doc.metadata.loc.lines.to}] Tags: ${doc.metadata.tags}`
+            `Retrieved Doc${i + 1}: ${sourceSlice} ${lines} Tags: ${tags}`
           );
         });
 
@@ -114,12 +130,12 @@ export class Workflow {
 
         const serialized = selectedDocs
           .map(
-            (doc) =>
-              `Source: ${doc.metadata.source}[${doc.metadata.loc.lines.from}-${
-                doc.metadata.loc.lines.to
-              }]\nTags: ${doc.metadata.tags.join(",")}\nContent: ${
-                doc.pageContent
-              }`
+            (doc) => {
+              const source = doc.metadata.source || 'Unknown';
+              const lines = doc.metadata.loc?.lines ? `[${doc.metadata.loc.lines.from}-${doc.metadata.loc.lines.to}]` : '[No line info]';
+              const tags = doc.metadata.tags ? doc.metadata.tags.join(",") : '';
+              return `Source: ${source}${lines}\nTags: ${tags}\nContent: ${doc.pageContent}`;
+            }
           )
           .join("\n");
 
@@ -157,10 +173,13 @@ export class Workflow {
           break;
         }
       }
-      let toolMessages = recentToolMessages.reverse();
+      recentToolMessages.reverse();
+      let toolMessages = recentToolMessages;
 
       // Format into prompt
-      const docsContent = toolMessages.map((doc) => doc.content).join("\n");
+      const docsContent = toolMessages.map((doc) => 
+        typeof doc.content === 'string' ? doc.content : JSON.stringify(doc.content)
+      ).join("\n");
       const systemMessageContent =
         "You are an assistant for question-answering tasks. " +
         "Use the following pieces of retrieved context to answer " +

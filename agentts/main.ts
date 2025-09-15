@@ -25,14 +25,28 @@ const embeddings = new OpenAIEmbeddings({
 
 //const vectorStore = new MemoryVectorStore(embeddings);
 
-import { Chroma } from "@langchain/community/vectorstores/chroma";
-import { exit } from "process";
+// import { Chroma } from "@langchain/community/vectorstores/chroma";
+// import { exit } from "process";
 
-const vectorStore = new Chroma(embeddings, {
-  collectionName: "guidelines",
-  url: "http://localhost:9000", // URL of the Chroma server
-  // For file-based storage, omit the 'url' parameter
-  // Chroma will use local storage by default
+// const vectorStore = new Chroma(embeddings, {
+//   collectionName: "guidelines",
+//   url: "http://localhost:9000", // URL of the Chroma server
+//   // For file-based storage, omit the 'url' parameter
+//   // Chroma will use local storage by default
+// });
+
+import { PineconeStore } from "@langchain/pinecone";
+import { Pinecone as PineconeClient } from "@pinecone-database/pinecone";
+
+const pinecone = new PineconeClient();
+const pineconeIndex = pinecone.Index("guidelines");
+
+const vectorStore = await PineconeStore.fromExistingIndex(embeddings, {
+  pineconeIndex,
+  // Maximum number of batch requests to allow at once. Each batch is 1000 vectors.
+  maxConcurrency: 5,
+  // You can pass a namespace here too
+  // namespace: "foo",
 });
 
 const urls: string[] = [
@@ -85,6 +99,20 @@ try {
     // Index chunks
     await vectorStore.addDocuments(splits);
   } else {
+    // load metadata tags from existing documents
+    // For Pinecone, we need to query documents to extract tags from metadata
+    const existingDocs = await vectorStore.similaritySearch("", 100); // Get more docs to collect tags
+    const allTags = new Set<string>();
+    
+    existingDocs.forEach(doc => {
+      if (doc.metadata?.tags && Array.isArray(doc.metadata.tags)) {
+        doc.metadata.tags.forEach((tag: string) => allTags.add(tag));
+      }
+    });
+    
+    loader.allTags = Array.from(allTags);
+    
+    console.log(`Document tags identified: ${loader.allTags.length}`);
     console.log(`Found ${testSearch.length} existing documents in vector store`);
   }
 } catch (error) {
