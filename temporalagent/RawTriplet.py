@@ -1,7 +1,8 @@
-from temporalagent.Predicate import Predicate
+from Predicate import Predicate
 
 
 from pydantic import BaseModel, Field
+from typing import Optional
 
 
 class RawTriplet(BaseModel):

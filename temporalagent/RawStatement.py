@@ -1,6 +1,6 @@
 # This model defines the structure for a single extracted statement
-from temporalagent.StatementType import StatementType
-from temporalagent.TemporalType import TemporalType
+from StatementType import StatementType
+from TemporalType import TemporalType
 
 
 from pydantic import BaseModel

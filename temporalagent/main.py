@@ -3,14 +3,14 @@
 # Import loader for Hugging Face datasets
 from langchain_community.document_loaders import HuggingFaceDatasetLoader
 
-from temporalagent.Entity import Entity
-from temporalagent.GraphState import GraphState
-from temporalagent.RawExtraction import RawExtraction
-from temporalagent.RawStatementList import RawStatementList
-from temporalagent.StatementType import StatementType
-from temporalagent.TemporalEvent import TemporalEvent
-from temporalagent.TemporalType import TemporalType
-from temporalagent.Triplet import Triplet
+from Entity import Entity
+from GraphState import GraphState
+from RawExtraction import RawExtraction
+from RawStatementList import RawStatementList
+from StatementType import StatementType
+from TemporalEvent import TemporalEvent
+from TemporalType import TemporalType
+from Triplet import Triplet
 
 # Dataset configuration
 hf_dataset_name = "jlh-ibm/earnings_call"  # HF dataset name
@@ -72,8 +72,8 @@ def find_quarter(text: str) -> str | None:
     return match[0] if match else None
 
 # Test on the first document
-quarter = find_quarter(documents[0].page_content)
-print(f"Extracted Quarter for the first document: {quarter}")
+#quarter = find_quarter(documents[0].page_content)
+#print(f"Extracted Quarter for the first document: {quarter}")
 
 #from langchain_nebius import NebiusEmbeddings
 from langchain_openai import OpenAIEmbeddings
@@ -89,7 +89,7 @@ from langchain_openai import OpenAIEmbeddings
 
 embeddings = OpenAIEmbeddings(
     model="text-embedding-qwen3-embedding-0.6b",
-    base_url="http://localhost:1234/v1",
+    base_url="http://watzmann:1234/v1",
     api_key=None, # Placeholder API key
     check_embedding_ctx_length=False
 )
@@ -112,13 +112,62 @@ chunked_documents_lc = []
 # Printing total number of docs (188) We already know that
 #print(f"Processing {len(documents)} documents using LangChain's SemanticChunker...")
 
+import sqlite3
+
+def setup_local_db(db_path="db/entities.db"):
+    """
+    Sets up a persistent SQLite database in the specified file and creates the 'entities' table.
+
+    The 'entities' table schema:
+    - id: TEXT, Primary Key
+    - name: TEXT, name of the entity
+    - type: TEXT, type/category of the entity
+    - description: TEXT, description of the entity
+    - is_canonical: INTEGER, flag to indicate if entity is canonical (default 1)
+    
+    Returns:
+        sqlite3.Connection: A connection object to the local database file.
+    """
+    # Establish connection to an in-memory SQLite database
+    conn = sqlite3.connect(db_path)
+
+    # Create a cursor object to execute SQL commands
+    cursor = conn.cursor()
+
+    # Create the 'entities' table if it doesn't already exist
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS entities (
+            id TEXT PRIMARY KEY,
+            name TEXT,
+            type TEXT,
+            description TEXT,
+            is_canonical INTEGER DEFAULT 1
+        )
+    """)
+
+    # Commit changes to save the table schema
+    conn.commit()
+
+    # Return the connection object for further use
+    return conn
+
 from tqdm import tqdm
 
 # Chunk each transcript document
 #docs_to_process = documents[:3]  # Uncomment for quick testing
 
 # get documents where metadata company is "AMD"
-docs_to_process = [doc for doc in documents if doc.metadata.get("company") == "AMD"]
+docs_to_process = []
+
+# Create the database connection and set up the entities table
+db_conn = setup_local_db()
+
+cursor = db_conn.cursor()
+cursor.execute("SELECT COUNT(*) FROM events")
+event_count = cursor.fetchone()[0]
+#if not os.path.exists("db/entities.db") :
+if event_count == 0:
+    docs_to_process = [doc for doc in documents if doc.metadata.get("company") == "AMD"]
 
 #docs_to_process = documents  # Uncomment to process all documents
 
@@ -149,12 +198,12 @@ print(f"Number of new documents (chunks): {chunked_doc_count}")
 print(f"Average chunks per transcript: {chunked_doc_count / original_doc_count:.2f}")
 
 # Inspect the 11th chunk (index 10)
-sample_chunk = chunked_documents_lc[10]
-print("Sample Chunk Content (first 30 chars):")
-print(sample_chunk.page_content[:30] + "...")
+#sample_chunk = chunked_documents_lc[10]
+#print("Sample Chunk Content (first 30 chars):")
+#print(sample_chunk.page_content[:30] + "...")
 
-print("\nSample Chunk Metadata:")
-print(sample_chunk.metadata)
+#print("\nSample Chunk Metadata:")
+#print(sample_chunk.metadata)
 
 # Calculate average word count per chunk
 total_chunk_words = sum(len(doc.page_content.split()) for doc in chunked_documents_lc)
@@ -226,10 +275,10 @@ from langchain_openai import ChatOpenAI
 # )
 
 # Replace with your LM Studio server address and port
-lm_studio_endpoint = "http://localhost:1234/v1" 
+lm_studio_endpoint = "http://watzmann:1234/v1" 
 
 llm = ChatOpenAI(
-    model="qwen/qwen3-8b",
+    model="qwen/qwen2.5-vl-7b",
     base_url=lm_studio_endpoint,
     api_key=None,  # LM Studio doesn't require an API key
 )
@@ -237,24 +286,24 @@ llm = ChatOpenAI(
 # Create the chain: prompt -> LLM -> structured output parser
 statement_extraction_chain = prompt | llm.with_structured_output(RawStatementList)
 
-# Select the sample chunk we inspected earlier for testing extraction
-sample_chunk_for_extraction = chunked_documents_lc[10]
+## Select the sample chunk we inspected earlier for testing extraction
+#sample_chunk_for_extraction = chunked_documents_lc[10]
 
-print("--- Running statement extraction on a sample chunk ---")
-print(f"Chunk Content:\n{sample_chunk_for_extraction.page_content}")
-print("\nInvoking LLM for extraction...")
+# print("--- Running statement extraction on a sample chunk ---")
+# print(f"Chunk Content:\n{sample_chunk_for_extraction.page_content}")
+# print("\nInvoking LLM for extraction...")
 
-# Call the extraction chain with necessary inputs
-extracted_statements_list = statement_extraction_chain.invoke({
-    "main_entity": sample_chunk_for_extraction.metadata["company"],
-    "publication_date": sample_chunk_for_extraction.metadata["date"].isoformat(),
-    "document_chunk": sample_chunk_for_extraction.page_content,
-    "definitions": definitions_text
-})
+# # Call the extraction chain with necessary inputs
+# extracted_statements_list = statement_extraction_chain.invoke({
+#     "main_entity": sample_chunk_for_extraction.metadata["company"],
+#     "publication_date": sample_chunk_for_extraction.metadata["date"].isoformat(),
+#     "document_chunk": sample_chunk_for_extraction.page_content,
+#     "definitions": definitions_text
+# })
 
-print("\n--- Extraction Result ---")
-# Pretty-print the output JSON from the model response
-print(extracted_statements_list.model_dump_json(indent=2))
+# print("\n--- Extraction Result ---")
+# # Pretty-print the output JSON from the model response
+# print(extracted_statements_list.model_dump_json(indent=2))
 
 from datetime import datetime, timezone
 from dateutil.parser import parse
@@ -360,29 +409,29 @@ date_extraction_prompt = ChatPromptTemplate.from_template(date_extraction_prompt
 # with the LLM configured to output structured RawTemporalRange objects.
 date_extraction_chain = date_extraction_prompt | llm.with_structured_output(RawTemporalRange)
 
-# Take the first extracted statement for date extraction testing
-sample_statement = extracted_statements_list.statements[0]
-chunk_metadata = sample_chunk_for_extraction.metadata
+# # Take the first extracted statement for date extraction testing
+# sample_statement = extracted_statements_list.statements[0]
+# chunk_metadata = sample_chunk_for_extraction.metadata
 
-print(f"--- Running date extraction for statement ---")
-print(f'Statement: "{sample_statement.statement}"')
-print(f"Reference Publication Date: {chunk_metadata['date'].isoformat()}")
+# print(f"--- Running date extraction for statement ---")
+# print(f'Statement: "{sample_statement.statement}"')
+# print(f"Reference Publication Date: {chunk_metadata['date'].isoformat()}")
 
-# Invoke the date extraction chain with relevant inputs
-raw_temporal_range = date_extraction_chain.invoke({
-    "statement": sample_statement.statement,
-    "statement_type": sample_statement.statement_type.value,
-    "temporal_type": sample_statement.temporal_type.value,
-    "publication_date": chunk_metadata["date"].isoformat(),
-    "quarter": chunk_metadata["quarter"]
-})
+# # Invoke the date extraction chain with relevant inputs
+# raw_temporal_range = date_extraction_chain.invoke({
+#     "statement": sample_statement.statement,
+#     "statement_type": sample_statement.statement_type.value,
+#     "temporal_type": sample_statement.temporal_type.value,
+#     "publication_date": chunk_metadata["date"].isoformat(),
+#     "quarter": chunk_metadata["quarter"]
+# })
 
-# Parse and validate raw LLM output into a structured TemporalValidityRange model
-final_temporal_range = TemporalValidityRange.model_validate(raw_temporal_range.model_dump())
+# # Parse and validate raw LLM output into a structured TemporalValidityRange model
+# final_temporal_range = TemporalValidityRange.model_validate(raw_temporal_range.model_dump())
 
-print("\n--- Parsed & Validated Result ---")
-print(f"Valid At: {final_temporal_range.valid_at}")
-print(f"Invalid At: {final_temporal_range.invalid_at}")
+# print("\n--- Parsed & Validated Result ---")
+# print(f"Valid At: {final_temporal_range.valid_at}")
+# print(f"Invalid At: {final_temporal_range.invalid_at}")
 
 
 from pydantic import BaseModel, Field
@@ -438,92 +487,93 @@ triplet_extraction_prompt = ChatPromptTemplate.from_template(triplet_extraction_
 # Create the chain for triplet and entity extraction.
 triplet_extraction_chain = triplet_extraction_prompt | llm.with_structured_output(RawExtraction)
 
-# Let's use the same statement we've been working with.
-sample_statement_for_triplets = extracted_statements_list.statements[0]
+# # Let's use the same statement we've been working with.
+# sample_statement_for_triplets = extracted_statements_list.statements[0]
 
-print(f"--- Running triplet extraction for statement ---")
-print(f'Statement: "{sample_statement_for_triplets.statement}"')
+# print(f"--- Running triplet extraction for statement ---")
+# print(f'Statement: "{sample_statement_for_triplets.statement}"')
 
-# Invoke the chain.
-raw_extraction_result = triplet_extraction_chain.invoke({
-    "statement": sample_statement_for_triplets.statement,
-    "predicate_instructions": predicate_instructions_text
-})
+# # Invoke the chain.
+# raw_extraction_result = triplet_extraction_chain.invoke({
+#     "statement": sample_statement_for_triplets.statement,
+#     "predicate_instructions": predicate_instructions_text
+# })
 
-print("\n--- Triplet Extraction Result ---")
-print(raw_extraction_result.model_dump_json(indent=2))
+# print("\n--- Triplet Extraction Result ---")
+# print(raw_extraction_result.model_dump_json(indent=2))
 
 import uuid
 from pydantic import BaseModel, Field
 
-# Final persistent model for a triplet relationship
-# Assume these are already defined from previous steps:
-# sample_statement, final_temporal_range, raw_extraction_result
+# # Final persistent model for a triplet relationship
+# # Assume these are already defined from previous steps:
+# # sample_statement, final_temporal_range, raw_extraction_result
 
-print("--- Assembling the final TemporalEvent ---")
+# print("--- Assembling the final TemporalEvent ---")
 
-# 1. Convert raw entities to persistent Entity objects with UUIDs
-idx_to_entity_map: dict[int, Entity] = {}
-final_entities: list[Entity] = []
+# # 1. Convert raw entities to persistent Entity objects with UUIDs
+# idx_to_entity_map: dict[int, Entity] = {}
+# final_entities: list[Entity] = []
 
-for raw_entity in raw_extraction_result.entities:
-    entity = Entity(
-        name=raw_entity.name,
-        type=raw_entity.type,
-        description=raw_entity.description
-    )
-    idx_to_entity_map[raw_entity.entity_idx] = entity
-    final_entities.append(entity)
+# for raw_entity in raw_extraction_result.entities:
+#     entity = Entity(
+#         name=raw_entity.name,
+#         type=raw_entity.type,
+#         description=raw_entity.description
+#     )
+#     idx_to_entity_map[raw_entity.entity_idx] = entity
+#     final_entities.append(entity)
 
-print(f"Created {len(final_entities)} persistent Entity objects.")
+# print(f"Created {len(final_entities)} persistent Entity objects.")
 
-# 2. Convert raw triplets to persistent Triplet objects, linking entities via UUIDs
-final_triplets: list[Triplet] = []
+# # 2. Convert raw triplets to persistent Triplet objects, linking entities via UUIDs
+# final_triplets: list[Triplet] = []
 
-for raw_triplet in raw_extraction_result.triplets:
-    subject_entity = idx_to_entity_map[raw_triplet.subject_id]
-    object_entity = idx_to_entity_map[raw_triplet.object_id]
+# for raw_triplet in raw_extraction_result.triplets:
+#     subject_entity = idx_to_entity_map[raw_triplet.subject_id]
+#     object_entity = idx_to_entity_map[raw_triplet.object_id]
 
-    triplet = Triplet(
-        subject_name=subject_entity.name,
-        subject_id=subject_entity.id,
-        predicate=raw_triplet.predicate,
-        object_name=object_entity.name,
-        object_id=object_entity.id,
-        value=raw_triplet.value
-    )
-    final_triplets.append(triplet)
+#     triplet = Triplet(
+#         subject_name=subject_entity.name,
+#         subject_id=subject_entity.id,
+#         predicate=raw_triplet.predicate,
+#         object_name=object_entity.name,
+#         object_id=object_entity.id,
+#         value=raw_triplet.value
+#     )
+#     final_triplets.append(triplet)
 
-print(f"Created {len(final_triplets)} persistent Triplet objects.")
+# print(f"Created {len(final_triplets)} persistent Triplet objects.")
 
-# 3. Create the final TemporalEvent object
-# We'll generate a dummy chunk_id for this example.
-temporal_event = TemporalEvent(
-    chunk_id=uuid.uuid4(), # Placeholder ID
-    statement=sample_statement.statement,
-    statement_type=sample_statement.statement_type,
-    temporal_type=sample_statement.temporal_type,
-    valid_at=final_temporal_range.valid_at,
-    invalid_at=final_temporal_range.invalid_at,
-    triplets=[t.id for t in final_triplets]
-)
+# # 3. Create the final TemporalEvent object
+# # We'll generate a dummy chunk_id for this example.
+# temporal_event = TemporalEvent(
+#     chunk_id=uuid.uuid4(), # Placeholder ID
+#     statement=sample_statement.statement,
+#     statement_type=sample_statement.statement_type,
+#     temporal_type=sample_statement.temporal_type,
+#     valid_at=final_temporal_range.valid_at,
+#     invalid_at=final_temporal_range.invalid_at,
+#     triplets=[t.id for t in final_triplets]
+# )
 
-print("\n--- Final Assembled TemporalEvent ---")
-print(temporal_event.model_dump_json(indent=2))
+# print("\n--- Final Assembled TemporalEvent ---")
+# print(temporal_event.model_dump_json(indent=2))
 
-print("\n--- Associated Entities ---")
-for entity in final_entities:
-    print(entity.model_dump_json(indent=2))
+# print("\n--- Associated Entities ---")
+# for entity in final_entities:
+#     print(entity.model_dump_json(indent=2))
 
-print("\n--- Associated Triplets ---")
-for triplet in final_triplets:
-    print(triplet.model_dump_json(indent=2))
+# print("\n--- Associated Triplets ---")
+# for triplet in final_triplets:
+#     print(triplet.model_dump_json(indent=2))
 
 
 def extract_events_from_chunks(state: GraphState) -> GraphState:
     chunks = state["chunks"]
 
     # Extract raw statements from each chunk
+    print(f"Extracting statements from {len(chunks)} chunks...")
     raw_stmts = statement_extraction_chain.batch([{
         "main_entity": c.metadata["company"],
         "publication_date": c.metadata["date"].isoformat(),
@@ -536,6 +586,7 @@ def extract_events_from_chunks(state: GraphState) -> GraphState:
              for i, rs in enumerate(raw_stmts) for s in rs.statements]
 
     # Prepare inputs and batch extract temporal data
+    print(f"Extracting temporal data from {len(stmts)} statements...")
     dates = date_extraction_chain.batch([{
         "statement": s["raw"].statement,
         "statement_type": s["raw"].statement_type.value,
@@ -545,6 +596,7 @@ def extract_events_from_chunks(state: GraphState) -> GraphState:
     } for s in stmts])
 
     # Prepare inputs and batch extract triplets
+    print(f"Extracting triplets from {len(stmts)} statements...")
     trips = triplet_extraction_chain.batch([{
         "statement": s["raw"].statement,
         "predicate_instructions": predicate_instructions_text
@@ -552,6 +604,7 @@ def extract_events_from_chunks(state: GraphState) -> GraphState:
 
     events, entities, triplets = [], [], []
 
+    print(f"Assembling final objects from {len(stmts)} statements...")
     for i, s in enumerate(stmts):
         # Validate temporal range data
         tr = TemporalValidityRange.model_validate(dates[i].model_dump())
@@ -580,6 +633,7 @@ def extract_events_from_chunks(state: GraphState) -> GraphState:
             triplets=[t.id for t in tpls]
         ))
 
+    print(f"Created {len(events)} TemporalEvents, {len(entities)} Entities, and {len(triplets)} Triplets.")
     return {"chunks": chunks, "temporal_events": events, "entities": entities, "triplets": triplets}
 
 from langgraph.graph import StateGraph, END
@@ -617,48 +671,6 @@ from langgraph.graph import StateGraph, END
 # print("\n--- Sample TemporalEvent from the final state ---")
 # # Print a sample event to see the fully assembled object
 # print(final_state['temporal_events'][5].model_dump_json(indent=2))
-
-import sqlite3
-
-def setup_in_memory_db():
-    """
-    Sets up an in-memory SQLite database and creates the 'entities' table.
-
-    The 'entities' table schema:
-    - id: TEXT, Primary Key
-    - name: TEXT, name of the entity
-    - type: TEXT, type/category of the entity
-    - description: TEXT, description of the entity
-    - is_canonical: INTEGER, flag to indicate if entity is canonical (default 1)
-    
-    Returns:
-        sqlite3.Connection: A connection object to the in-memory database.
-    """
-    # Establish connection to an in-memory SQLite database
-    conn = sqlite3.connect(":memory:")
-
-    # Create a cursor object to execute SQL commands
-    cursor = conn.cursor()
-
-    # Create the 'entities' table if it doesn't already exist
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS entities (
-            id TEXT PRIMARY KEY,
-            name TEXT,
-            type TEXT,
-            description TEXT,
-            is_canonical INTEGER DEFAULT 1
-        )
-    """)
-
-    # Commit changes to save the table schema
-    conn.commit()
-
-    # Return the connection object for further use
-    return conn
-
-# Create the database connection and set up the entities table
-db_conn = setup_in_memory_db()
 
 import string
 from rapidfuzz import fuzz
@@ -906,28 +918,77 @@ workflow.add_edge("invalidate_events", END)
 # Compile the final ingestion workflow
 ingestion_app = workflow.compile()
 
-# Use the same input as before
-graph_input = {"chunks": chunked_documents_lc}
+# only execute graph if there are no events
+if event_count == 0:
+    # Use the same input as before
+    graph_input = {"chunks": chunked_documents_lc}
 
-# Invoke the final graph
-final_ingested_state = ingestion_app.invoke(graph_input)
-print("\n--- Full graph execution with invalidation complete ---")
-
-# Find and print an invalidated event from the final state
-invalidated_event = next((e for e in final_ingested_state['temporal_events'] if e.invalidated_by is not None), None)
-
-if invalidated_event:
-    print("\n--- Sample of an Invalidated Event ---")
-    print(invalidated_event.model_dump_json(indent=2))
-    
-    # Find the event that caused the invalidation
-    invalidating_event = next((e for e in final_ingested_state['temporal_events'] if e.id == invalidated_event.invalidated_by), None)
-    
-    if invalidating_event:
-        print("\n--- Was Invalidated By this Event ---")
-        print(invalidating_event.model_dump_json(indent=2))
+    # Invoke the final graph
+    print("\n--- Starting full graph execution with invalidation ---")
+    final_ingested_state = ingestion_app.invoke(graph_input)
+    print("\n--- Full graph execution with invalidation complete ---")
 else:
-    print("\nNo invalidated events were found in this run.")
+    print("loading perstistent state from db/entities.db")
+    final_ingested_state = {"chunks": chunked_documents_lc, "temporal_events": [], "entities": [], "triplets": []}
+    cursor = db_conn.cursor()
+    cursor.execute("SELECT id, chunk_id, statement, statement_type, temporal_type, valid_at, invalid_at FROM events")
+    rows = cursor.fetchall()
+    for row in rows:
+        event = TemporalEvent(
+            id=uuid.UUID(row[0]),
+            chunk_id=uuid.UUID(row[1]),
+            statement=row[2],
+            statement_type=StatementType(row[3]),
+            temporal_type=TemporalType(row[4]),
+            valid_at=parse_date_str(row[5]),
+            invalid_at=parse_date_str(row[6]) if row[6] else None,
+            triplets=[],
+            embedding=None,
+            invalidated_by=None
+        )
+        final_ingested_state["temporal_events"].append(event)
+    cursor.execute("SELECT id, name, type, description, is_canonical FROM entities")
+    rows = cursor.fetchall()
+    for row in rows:
+        entity = Entity(
+            id=uuid.UUID(row[0]),
+            name=row[1],
+            type=row[2],
+            description=row[3],
+            resolved_id=None if row[4] else uuid.UUID(row[0])
+        )
+        final_ingested_state["entities"].append(entity)
+    cursor.execute("SELECT id, event_id, subject_id, predicate FROM triplets")
+    rows = cursor.fetchall()
+    for row in rows:
+        triplet = Triplet(
+            id=uuid.UUID(row[0]),
+            subject_id=uuid.UUID(row[2]),
+            subject_name="",
+            predicate=row[3],
+            object_id=None,
+            object_name="",
+            value="",
+        )
+        final_ingested_state["triplets"].append(triplet)
+    print(f"Loaded {len(final_ingested_state['temporal_events'])} events, {len(final_ingested_state['entities'])} entities, and {len(final_ingested_state['triplets'])} triplets from the database.")
+                 
+
+# # Find and print an invalidated event from the final state
+# invalidated_event = next((e for e in final_ingested_state['temporal_events'] if e.invalidated_by is not None), None)
+
+# if invalidated_event:
+#     print("\n--- Sample of an Invalidated Event ---")
+#     print(invalidated_event.model_dump_json(indent=2))
+    
+#     # Find the event that caused the invalidation
+#     invalidating_event = next((e for e in final_ingested_state['temporal_events'] if e.id == invalidated_event.invalidated_by), None)
+    
+#     if invalidating_event:
+#         print("\n--- Was Invalidated By this Event ---")
+#         print(invalidating_event.model_dump_json(indent=2))
+# else:
+#     print("\nNo invalidated events were found in this run.")
 
 import networkx as nx
 import uuid

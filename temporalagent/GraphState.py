@@ -1,6 +1,6 @@
-from temporalagent.Entity import Entity
-from temporalagent.TemporalEvent import TemporalEvent
-from temporalagent.Triplet import Triplet
+from Entity import Entity
+from TemporalEvent import TemporalEvent
+from Triplet import Triplet
 
 
 from langchain_core.documents import Document

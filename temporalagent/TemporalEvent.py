@@ -1,5 +1,5 @@
-from temporalagent.TemporalType import TemporalType
-from temporalagent.StatementType import StatementType
+from TemporalType import TemporalType
+from StatementType import StatementType
 
 
 from pydantic import BaseModel, Field
