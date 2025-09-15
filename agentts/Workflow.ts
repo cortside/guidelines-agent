@@ -73,47 +73,18 @@ export class Workflow {
 
     const retrieve = tool(
       async (search: z.infer<typeof searchSchema>) => {
-        const filter = (doc: Document) => {
-          const tags = Array.isArray(doc.metadata.tags)
-            ? doc.metadata.tags
-            : [];
-
-          console.log(`Doc tags: ${tags.join(", ")}`);
-          const hasTags = search.tags.some((tag) => tags.includes(tag));
-          console.log(`Doc has required tags: ${hasTags}`);
-          return hasTags;
-        };
+        console.log(`Searching for: "${search.query}" with tags: ${search.tags.join(", ")}`);
 
         const retrievedDocs = await vectorStore.similaritySearch(
           search.query,
           9,
-          filter
+          { "tags": {"$in": search.tags} }
         );
         console.log(`Retrieved ${retrievedDocs.length} documents`);
 
-        let filteredDocs = retrievedDocs;
-        if (search.tags !== null && search.tags.length > 0) {
-          console.log(`Filtering by tags: ${search.tags.join(", ")}`);
-
-          filteredDocs = retrievedDocs.filter((doc) => {
-            console.log(`Doc tags: [${doc.metadata.source}] ${doc.metadata.tags.join(", ")}`);
-            if (!doc.metadata.tags) return false;
-            const docTags = doc.metadata.tags
-              .map((tag: string) => tag.trim().toLowerCase());
-            return search.tags.some((tag) =>
-              docTags.includes(tag.toLowerCase())
-            );
-          });
-
-          console.log(`After filtering, ${filteredDocs.length} documents remain.`);
-        } else {
-          console.log("No tags specified, performing unfiltered search.");
-        }
-
         // enumerate retrieved docs
-        console.log(`Filtered ${filteredDocs.length} documents`);
-        filteredDocs.forEach((doc, i) => {
-          const sourceSlice = doc.metadata.source ? doc.metadata.source.slice(0, 20) : 'Unknown';
+        retrievedDocs.forEach((doc, i) => {
+          const sourceSlice = doc.metadata.source ? doc.metadata.source : 'Unknown';
           const lines = doc.metadata.loc?.lines ? `[${doc.metadata.loc.lines.from}-${doc.metadata.loc.lines.to}]` : '[No line info]';
           const tags = doc.metadata.tags ? doc.metadata.tags : [];
           console.log(
@@ -124,9 +95,19 @@ export class Workflow {
         const selectedDocs = await getRankedDocuments(
           llm,
           search.query,
-          filteredDocs,
+          retrievedDocs,
           3
         );
+
+        // enumerate retrieved docs
+        selectedDocs.forEach((doc, i) => {
+          const sourceSlice = doc.metadata.source ? doc.metadata.source : 'Unknown';
+          const lines = doc.metadata.loc?.lines ? `[${doc.metadata.loc.lines.from}-${doc.metadata.loc.lines.to}]` : '[No line info]';
+          const tags = doc.metadata.tags ? doc.metadata.tags : [];
+          console.log(
+            `selected Doc${i + 1}: ${sourceSlice} ${lines} Tags: ${tags}`
+          );
+        });
 
         const serialized = selectedDocs
           .map(
