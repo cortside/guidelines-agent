@@ -75,39 +75,32 @@ export class Workflow {
       async (search: z.infer<typeof searchSchema>) => {
         console.log(`Searching for: "${search.query}" with tags: ${search.tags.join(", ")}`);
 
-        const retrievedDocs = await vectorStore.similaritySearch(
+        // Use similaritySearchWithScore instead of similaritySearch
+        const retrievedDocsWithScores = await vectorStore.similaritySearchWithScore(
           search.query,
           9,
           { "tags": {"$in": search.tags} }
         );
-        console.log(`Retrieved ${retrievedDocs.length} documents`);
+        console.log(`Retrieved ${retrievedDocsWithScores.length} documents`);
 
-        // enumerate retrieved docs
-        retrievedDocs.forEach((doc, i) => {
+        // enumerate retrieved docs with scores
+        retrievedDocsWithScores.forEach(([doc, score], i) => {
           const sourceSlice = doc.metadata.source ? doc.metadata.source : 'Unknown';
           const lines = doc.metadata.loc?.lines ? `[${doc.metadata.loc.lines.from}-${doc.metadata.loc.lines.to}]` : '[No line info]';
           const tags = doc.metadata.tags ? doc.metadata.tags : [];
           console.log(
-            `Retrieved Doc${i + 1}: ${sourceSlice} ${lines} Tags: ${tags}`
+            `Retrieved Doc${i + 1}: ${sourceSlice} ${lines} Tags: ${tags} Score: ${score}`
           );
         });
 
+        // Extract just the documents for ranking
+        const filteredDocs = retrievedDocsWithScores.map(([doc]) => doc);
         const selectedDocs = await getRankedDocuments(
           llm,
           search.query,
-          retrievedDocs,
+          filteredDocs,
           3
         );
-
-        // enumerate retrieved docs
-        selectedDocs.forEach((doc, i) => {
-          const sourceSlice = doc.metadata.source ? doc.metadata.source : 'Unknown';
-          const lines = doc.metadata.loc?.lines ? `[${doc.metadata.loc.lines.from}-${doc.metadata.loc.lines.to}]` : '[No line info]';
-          const tags = doc.metadata.tags ? doc.metadata.tags : [];
-          console.log(
-            `selected Doc${i + 1}: ${sourceSlice} ${lines} Tags: ${tags}`
-          );
-        });
 
         const serialized = selectedDocs
           .map(
@@ -121,6 +114,15 @@ export class Workflow {
           .join("\n");
 
         console.log(`Retrieved ${selectedDocs.length} documents.`);
+        // enumerate filtered docs with scores
+        selectedDocs.forEach((doc, i) => {
+          const sourceSlice = doc.metadata.source ? doc.metadata.source.slice(0, 20) : 'Unknown';
+          const lines = doc.metadata.loc?.lines ? `[${doc.metadata.loc.lines.from}-${doc.metadata.loc.lines.to}]` : '[No line info]';
+          const tags = doc.metadata.tags ? doc.metadata.tags : [];
+          console.log(
+            `Selected Doc${i + 1}: ${sourceSlice} ${lines} Tags: ${tags}`
+          );
+        });        
         return [serialized, selectedDocs];
       },
       {
