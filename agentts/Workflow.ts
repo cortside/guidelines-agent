@@ -86,7 +86,9 @@ export class Workflow {
         // enumerate retrieved docs with scores
         retrievedDocsWithScores.forEach(([doc, score], i) => {
           const sourceSlice = doc.metadata.source ? doc.metadata.source : 'Unknown';
-          const lines = doc.metadata.loc?.lines ? `[${doc.metadata.loc.lines.from}-${doc.metadata.loc.lines.to}]` : '[No line info]';
+          const lines = (doc.metadata["loc.lines.from"] !== undefined && doc.metadata["loc.lines.to"] !== undefined)
+            ? `[${doc.metadata["loc.lines.from"]}-${doc.metadata["loc.lines.to"]}]`
+            : '[No line info]';
           const tags = doc.metadata.tags ? doc.metadata.tags : [];
           console.log(
             `Retrieved Doc${i + 1}: ${sourceSlice} ${lines} Tags: ${tags} Score: ${score}`
@@ -106,7 +108,9 @@ export class Workflow {
           .map(
             (doc) => {
               const source = doc.metadata.source || 'Unknown';
-              const lines = doc.metadata.loc?.lines ? `[${doc.metadata.loc.lines.from}-${doc.metadata.loc.lines.to}]` : '[No line info]';
+              const lines = (doc.metadata["loc.lines.from"] !== undefined && doc.metadata["loc.lines.to"] !== undefined)
+                ? `[${doc.metadata["loc.lines.from"]}-${doc.metadata["loc.lines.to"]}]`
+                : '[No line info]';
               const tags = doc.metadata.tags ? doc.metadata.tags.join(",") : '';
               return `Source: ${source}${lines}\nTags: ${tags}\nContent: ${doc.pageContent}`;
             }
@@ -117,7 +121,9 @@ export class Workflow {
         // enumerate filtered docs with scores
         selectedDocs.forEach((doc, i) => {
           const sourceSlice = doc.metadata.source ? doc.metadata.source.slice(0, 20) : 'Unknown';
-          const lines = doc.metadata.loc?.lines ? `[${doc.metadata.loc.lines.from}-${doc.metadata.loc.lines.to}]` : '[No line info]';
+          const lines = (doc.metadata["loc.lines.from"] !== undefined && doc.metadata["loc.lines.to"] !== undefined)
+            ? `[${doc.metadata["loc.lines.from"]}-${doc.metadata["loc.lines.to"]}]`
+            : '[No line info]';
           const tags = doc.metadata.tags ? doc.metadata.tags : [];
           console.log(
             `Selected Doc${i + 1}: ${sourceSlice} ${lines} Tags: ${tags}`

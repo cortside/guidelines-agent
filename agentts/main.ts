@@ -41,6 +41,9 @@ import { Pinecone as PineconeClient } from "@pinecone-database/pinecone";
 const pinecone = new PineconeClient();
 const pineconeIndex = pinecone.Index("guidelines");
 
+// delete all documents in the vector store
+await pineconeIndex.deleteAll();
+
 const vectorStore = await PineconeStore.fromExistingIndex(embeddings, {
   pineconeIndex,
   // Maximum number of batch requests to allow at once. Each batch is 1000 vectors.

@@ -17,7 +17,7 @@ export class DocumentLoader {
     const response = await fetch(url);
     const text = await response.text();
     // Return as array of Document objects
-    return [new Document({ pageContent: text, metadata: { source: url } })];
+    return [new Document({ pageContent: text, metadata: { source: url.replace('https://raw.githubusercontent.com/cortside/guidelines/refs/heads/master', '') } })];
   }
 
   private async generateMetaTags(content: string): Promise<string[]> {
@@ -80,7 +80,14 @@ Output only a comma-separated list of tags, with no extra text, explanations, or
       chunkSize: 1000,
       chunkOverlap: 200,
     });
-    const allSplits = await splitter.splitDocuments(docs);
+
+    // Split each document individually to preserve line metadata
+    const allSplitsArrays = await Promise.all(
+      docs.map(async (doc) => {
+        return splitter.createDocuments([doc.pageContent], [doc.metadata]);
+      })
+    );
+    const allSplits = allSplitsArrays.flat();
     console.log(
       `Split ${docs.length} document into ${allSplits.length} sub-documents.`
     );
