@@ -3,11 +3,21 @@
 ## Purpose
 The `chatbot/` directory contains the frontend web application for interacting with the agent API. It provides a user-friendly chat interface for submitting queries, viewing responses, and managing conversations.
 
+## Current Status (Updated September 2025)
+
+- **Refactoring Complete**: Component tree has been fully modularized with clear separation of concerns
+- **Documentation**: Comprehensive component documentation available in `component-documentation.md`
+- **Type Safety**: Enhanced TypeScript types with prop interfaces and API response types
+- **Utilities**: All core utilities extracted and implemented (validation, parsing, error handling, focus management)
+
 ## Main Components
 
 - **src/App.tsx**: Main React component that initializes the application and manages global state.
-- **src/components/ChatPage.tsx**: Core chat interface for user-agent interaction.
-- **src/components/Sidebar.tsx**: Sidebar navigation and conversation management.
+- **src/components/ChatPage/**: Modular chat interface components (MessageList, MessageBubble, MessageInput).
+- **src/components/Sidebar/Sidebar.tsx**: Dynamic sidebar navigation for conversation management.
+- **src/hooks/**: Custom hooks for chat API logic and conversation management.
+- **src/types/**: Centralized TypeScript types and interfaces.
+- **src/utils/**: Extracted utility functions for common operations.
 - **src/lib/api.ts**: Handles API requests to the backend agent API.
 - **index.html**, **App.css**, **tailwind.config.js**: UI layout, styling, and configuration.
 - **Dockerfile**, **k8s-deployment.yaml**, **k8s-service.yaml**: Containerization and Kubernetes deployment configuration.

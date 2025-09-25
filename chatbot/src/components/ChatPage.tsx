@@ -1,87 +1,121 @@
-import React, { useState, useRef, useEffect } from 'react';
-import ReactMarkdown from 'react-markdown';
-import { sendMessage } from '../lib/api';
+import React, { useRef, useEffect, useState } from 'react';
+import { useChatApi } from '../hooks/useChatApi';
+import { MessageList } from './ChatPage/MessageList';
+import { MessageInput } from './ChatPage/MessageInput';
+import { scrollToBottom } from '../utils/scrollToBottom';
+import { focusElement } from '../utils/focusElement';
+import { useResponsive } from '../hooks/useResponsive';
+import { useErrorHandler } from '../hooks/useErrorHandler';
+import { NetworkError } from './common/NetworkError';
+import { ErrorBoundary } from './common/ErrorBoundary';
+import { LoadingSpinner } from './common/LoadingSpinner';
 
 export function ChatPage({ conversationId }: Readonly<{ conversationId: string }>) {
-  const [messages, setMessages] = useState<{ role: string; content: string }[]>([]);
+  const { messages, send, loading, error: apiError, clearError: clearApiError } = useChatApi(conversationId);
   const [input, setInput] = useState('');
   const historyRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const prevInputRef = useRef(input);
+  const { isMobile, padding } = useResponsive();
+  const { error, isError, errorType, clearError, retry, handleAsyncError } = useErrorHandler();
 
   useEffect(() => {
-    if (historyRef.current) {
-      historyRef.current.scrollTop = historyRef.current.scrollHeight;
-    }
+    scrollToBottom(historyRef);
   }, [messages]);
 
-  const send = async () => {
-    if (input.trim()) {
-      setMessages((msgs) => [...msgs, { role: 'user', content: input }]);
-      const res = await sendMessage(conversationId, input);
-      setMessages((msgs) => [...msgs, { role: 'assistant', content: res.answer || '' }]);
+  useEffect(() => {
+    // Focus input on mount, but not on mobile to avoid keyboard popping up
+    if (!isMobile) {
+      focusElement(textareaRef.current);
+    }
+  }, [isMobile]);
+
+  useEffect(() => {
+    // Focus input after sending (when input transitions from non-empty to empty)
+    if (prevInputRef.current && !input && !isMobile) {
+      // Use setTimeout to ensure focus happens after any DOM updates
+      focusElement(textareaRef.current);
+    }
+    prevInputRef.current = input;
+  }, [input, isMobile]);
+
+  const handleSend = async () => {
+    const trimmedInput = input.trim();
+    if (!trimmedInput || loading) return;
+    
+    clearError();
+    clearApiError();
+    
+    const result = await handleAsyncError(async () => {
+      await send(trimmedInput);
+    });
+    
+    if (result !== null) {
       setInput('');
+      // Focus the input after a short delay, but not on mobile
+      if (!isMobile) {
+        focusElement(textareaRef.current);
+      }
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      send();
+  const handleRetry = async () => {
+    if (prevInputRef.current) {
+      await retry(() => send(prevInputRef.current));
     }
   };
 
   return (
-    <div className="flex flex-col flex-1 p-4 bg-linear-to-br from-blue-50 to-green-50">
-      <div
+    <div className={`flex flex-col h-full ${padding} bg-gradient-to-br from-blue-50 to-green-50`}>
+      <header className="mb-4">
+        <h2 className="text-xl font-semibold text-gray-800 sr-only">
+          Chat Messages
+        </h2>
+      </header>
+      
+      <section
         ref={historyRef}
-        className="flex-1 overflow-y-auto mb-4 p-2 rounded-lg bg-white shadow border border-gray-300"
-        style={{ maxHeight: '70vh' }}
+        className={`flex-1 overflow-y-auto mb-4 ${isMobile ? 'p-2' : 'p-4'} rounded-lg bg-white shadow-md border border-gray-200`}
+        style={{ 
+          maxHeight: isMobile ? 'calc(100vh - 180px)' : 'calc(100vh - 200px)',
+          minHeight: '200px'
+        }}
+        role="log"
+        aria-label="Chat conversation"
+        aria-live="polite"
+        aria-atomic="false"
       >
-        {messages.map((msg, i) => (
-          <div
-            key={`${msg.role}-${msg.content}-${i}`}
-            className={
-              msg.role === 'user'
-                ? 'flex justify-end mb-4'
-                : 'flex justify-start mb-4'
-            }
-          >
-            {msg.role === 'assistant' && (
-              <div className="flex items-end mr-2">
-                <div className="w-8 h-8 bg-green-400 rounded-full flex items-center justify-center text-white font-bold shadow">A</div>
-              </div>
-            )}
-            <div
-              className={
-                msg.role === 'user'
-                  ? 'max-w-lg bg-blue-600 text-white px-4 py-2 rounded-2xl whitespace-pre-line shadow-lg border border-blue-700'
-                  : 'max-w-lg bg-green-100 text-gray-900 px-4 py-2 rounded-2xl whitespace-pre-line shadow border border-green-300'
-              }
-            >
-              <ReactMarkdown>{msg.content}</ReactMarkdown>
-            </div>
-            {msg.role === 'user' && (
-              <div className="flex items-end ml-2">
-                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold shadow">U</div>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-      <div className="flex gap-2 items-end">
-        <textarea
-          className="border-2 border-blue-400 rounded px-2 py-1 flex-1 resize-none h-20 focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white shadow"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Type your message... (Shift+Enter for new line)"
+        <MessageList messages={messages} />
+        
+        {/* Loading State */}
+        {loading && (
+          <LoadingSpinner 
+            size="md" 
+            message="Assistant is thinking..."
+            className="my-4"
+          />
+        )}
+        
+        {/* Error States */}
+        {(isError || apiError) && (
+          <NetworkError
+            error={error || apiError || new Error('Unknown error')}
+            onRetry={handleRetry}
+            onDismiss={clearError}
+            className="my-4"
+          />
+        )}
+      </section>
+      
+      <footer className="mt-auto">
+        <MessageInput 
+          input={input} 
+          setInput={setInput} 
+          onSend={handleSend} 
+          loading={loading} 
+          textareaRef={textareaRef} 
         />
-        <button
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-2xl h-10 shadow-lg font-semibold"
-          onClick={send}
-        >
-          Send
-        </button>
-      </div>
+      </footer>
     </div>
   );
 }

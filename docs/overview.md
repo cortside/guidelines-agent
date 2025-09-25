@@ -45,20 +45,26 @@ This repository contains two main components:
 
 - **Key Files:**
   - `src/App.tsx`: Main React component.
-  - `src/components/ChatPage.tsx`, `Sidebar.tsx`: UI components for chat and navigation.
+  - `src/components/ChatPage/`: Modular chat UI components (MessageList, MessageBubble, MessageInput).
+  - `src/components/Sidebar/Sidebar.tsx`: Modular sidebar component for conversation navigation.
+  - `src/hooks/useChatApi.ts`: Custom hook for chat API logic (uses modular utilities for validation, parsing, error handling).
+  - `src/hooks/useConversations.ts`: Custom hook for conversation management.
+  - `src/types/`: Shared TypeScript types for messages and conversations.
+  - `src/utils/`: Utility functions (string formatting, scroll, validation, key generation, API parsing, error extraction, etc.).
   - `src/lib/api.ts`: Handles API requests to the backend.
   - `index.html`, `App.css`, `tailwind.config.js`: UI layout and styling.
   - `Dockerfile`, `k8s-deployment.yaml`, `k8s-service.yaml`: Deployment configuration for containerization and Kubernetes.
 
 - **Current State:**
-  - Prototype UI; may lack accessibility, responsiveness, and error handling.
-  - Minimal state management and testing.
+  - **COMPLETED (Sept 2025)**: Full modularization with separated components, hooks, and utilities.
+  - Enhanced TypeScript types and comprehensive component documentation.
+  - All utility functions extracted and implemented.
+  - Clean, maintainable architecture ready for enterprise features.
 
 - **Areas for Improvement:**
-  - Refactor for maintainability and scalability.
-  - Add UI/UX enhancements and accessibility features.
-  - Implement robust error handling and user feedback.
-  - Add end-to-end and component tests.
+  - Add UI/UX enhancements and accessibility features (Step 2).
+  - Implement robust error handling and user feedback (Step 3).
+  - Add end-to-end and component tests (Step 4).
 
 ---
 
