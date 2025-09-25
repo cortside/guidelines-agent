@@ -12,6 +12,7 @@ import {
 } from "@langchain/core/messages";
 import express from "express";
 import bodyParser from "body-parser";
+import cors from "cors";
 import { v4 as uuidv4 } from "uuid";
 
 const llm = new ChatOpenAI({
@@ -214,6 +215,7 @@ await callGraph("abc123", "What does the end of any document say about REST?");
 // await callGraph(threadId2, "What is REST?  Once you get that answer, what are the levels?");
 
 const app = express();
+app.use(cors());
 app.use(bodyParser.json());
 
 app.post("/chat", async (req: express.Request, res: express.Response) => {

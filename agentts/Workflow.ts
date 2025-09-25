@@ -78,7 +78,7 @@ export class Workflow {
         // Use similaritySearchWithScore instead of similaritySearch
         const retrievedDocsWithScores = await vectorStore.similaritySearchWithScore(
           search.query,
-          9,
+          21,
           { "tags": {"$in": search.tags} }
         );
         console.log(`Retrieved ${retrievedDocsWithScores.length} documents`);
@@ -101,7 +101,7 @@ export class Workflow {
           llm,
           search.query,
           filteredDocs,
-          3
+          7
         );
 
         const serialized = selectedDocs
@@ -120,13 +120,13 @@ export class Workflow {
         console.log(`Retrieved ${selectedDocs.length} documents.`);
         // enumerate filtered docs with scores
         selectedDocs.forEach((doc, i) => {
-          const sourceSlice = doc.metadata.source ? doc.metadata.source.slice(0, 20) : 'Unknown';
+          const source = doc.metadata.source ? doc.metadata.source : 'Unknown';
           const lines = (doc.metadata["loc.lines.from"] !== undefined && doc.metadata["loc.lines.to"] !== undefined)
             ? `[${doc.metadata["loc.lines.from"]}-${doc.metadata["loc.lines.to"]}]`
             : '[No line info]';
           const tags = doc.metadata.tags ? doc.metadata.tags : [];
           console.log(
-            `Selected Doc${i + 1}: ${sourceSlice} ${lines} Tags: ${tags}`
+            `Selected Doc${i + 1}: ${source} ${lines} Tags: ${tags}`
           );
         });        
         return [serialized, selectedDocs];
