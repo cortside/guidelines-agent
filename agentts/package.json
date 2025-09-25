@@ -14,18 +14,28 @@
     "cheerio": "^1.0.0-rc.12",
     "chromadb": "^3.0.14",
     "cors": "^2.8.5",
+    "dotenv": "^17.2.2",
     "express": "^5.1.0",
     "langchain": "^0.3.31",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
+    "yamljs": "^0.3.0",
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@types/node": "^20.19.17",
+    "@types/swagger-jsdoc": "^6.0.4",
+    "@types/swagger-ui-express": "^4.1.8",
+    "@types/yamljs": "^0.2.34",
     "eslint": "^8.56.0",
     "ts-node": "^10.9.2"
   },
   "scripts": {
     "build": "tsc",
-    "start": "node dist/main.js",
-    "dev": "node --loader ts-node/esm main.ts",
+    "start": "node dist/main-new.js",
+    "start:old": "node dist/main.js",
+    "dev": "node --loader ts-node/esm main-new.ts",
+    "dev:old": "node --loader ts-node/esm main.ts",
     "lint": "eslint . --ext .ts,.tsx"
   }
 }
