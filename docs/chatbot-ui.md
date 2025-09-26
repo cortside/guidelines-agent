@@ -110,18 +110,71 @@ export async function updateThread(threadId: string, updates: Partial<ThreadSumm
 - ✅ **Type Safety**: Complete TypeScript coverage for thread management
 - ✅ **User Experience**: Intuitive interface with loading states and error handling
 
-## Performance Characteristics
+## Recent Major Enhancements ✨ **NEW SECTION**
 
-### Response Times
-- Thread switching: < 200ms
-- Thread creation: < 100ms
-- Message sending: < 500ms (dependent on API response)
-- Thread list loading: < 50ms
+### Thread Management System Overhaul (September 2025)
 
-### Scalability
-- Supports 100+ threads per user efficiently
-- Memory usage optimized for large thread lists
-- Lazy loading of thread history when selected
+#### Problem Solved: Duplicate Thread Creation
+- **Issue**: React StrictMode was causing 4+ duplicate threads on page reload
+- **Solution**: Implemented global thread creation protection with `globalInitializationInProgress` flag
+- **Result**: Zero duplicate threads, reliable initialization in both development and production
+
+#### Problem Solved: Thread Selection Logic
+- **Issue**: App was creating new threads even when existing threads were available
+- **Solution**: Added `threadsLoaded` flag to ensure proper timing between thread loading and initialization
+- **Result**: Intelligent thread selection - existing threads are selected, new threads only created when needed
+
+#### Problem Solved: Stale Sidebar Data
+- **Issue**: After sending first message in new thread, sidebar didn't show latest message
+- **Solution**: Implemented message completion callbacks with force refresh mechanism
+- **Result**: Real-time sidebar updates after every message exchange
+
+#### Problem Solved: Manual Input Focus
+- **Issue**: Users had to manually click input field after creating new thread
+- **Solution**: Enhanced focus management with conversation ID dependency
+- **Result**: Automatic input focus when switching threads or creating new ones
+
+### Technical Implementation Highlights
+
+#### Enhanced State Management
+```typescript
+// useConversations hook with React StrictMode protection
+const loadThreads = useCallback(async (forceRefresh = false) => {
+  if (loadingThreads.current) return; // Prevent simultaneous calls
+  if (threadsLoaded.current && !forceRefresh) return; // Allow force refresh
+  // ... loading logic
+}, []);
+```
+
+#### Message Completion Integration
+```typescript
+// Automatic thread refresh after message exchanges
+const handleMessageComplete = async (): Promise<void> => {
+  await loadThreads(true); // Force refresh to update lastMessage
+};
+```
+
+#### Focus Management Enhancement
+```typescript
+// Auto-focus on thread switch
+useEffect(() => {
+  if (!isMobile) {
+    setTimeout(() => focusElement(textareaRef.current), 100);
+  }
+}, [conversationId, isMobile]);
+```
+
+### Performance Improvements
+- **Reduced API Calls**: Eliminated duplicate thread creation requests
+- **Smart Caching**: Force refresh only when needed, not on every load
+- **Faster UX**: Immediate focus after thread operations
+- **Memory Optimization**: Proper cleanup and state management
+
+### User Experience Enhancements
+- **Seamless Thread Creation**: Create → Select → Focus → Type (fully automated)
+- **Live Sidebar Updates**: Real-time synchronization with chat activity
+- **Zero Manual Steps**: Everything works automatically without user intervention
+- **Reliable Behavior**: Consistent experience across all environments
 
 ---
 

@@ -5,15 +5,27 @@ This document outlines the component boundaries, responsibilities, and usage pat
 ## Component Architecture
 
 ### App Component (`src/App.tsx`)
-**Responsibility**: Main application container that manages global state and layout.
+**Responsibility**: Main application container that manages global state, thread lifecycle, and layout.
 
 **Props**: None (root component)
 
 **Key Features**:
-- Manages conversation selection state
-- Generates thread IDs for new conversations
-- Orchestrates communication between Sidebar and ChatPage
-- Provides the main layout structure
+- **Thread Management**: Manages conversation selection state and thread lifecycle
+- **Intelligent Initialization**: Automatically selects existing threads or creates new ones as needed
+- **React StrictMode Compatible**: Robust duplicate prevention for development mode
+- **Real-time Updates**: Handles thread refresh after message exchanges
+- **Focus Coordination**: Provides callbacks for seamless user experience
+- **Responsive Layout**: Orchestrates communication between Sidebar and ChatPage
+
+**State Management**:
+- Uses `useConversations` hook for thread data and operations
+- Implements `initializationAttempted` ref for duplicate prevention
+- Manages sidebar visibility and responsive behavior
+
+**Key Methods**:
+- `handleCreateThread()`: Creates new thread and switches to it
+- `handleDeleteThread()`: Removes thread and handles current thread cleanup
+- `handleMessageComplete()`: Refreshes thread list after message exchanges
 
 **Dependencies**:
 - `useConversations` hook for conversation data
@@ -22,19 +34,28 @@ This document outlines the component boundaries, responsibilities, and usage pat
 ---
 
 ### ChatPage Component (`src/components/ChatPage.tsx`)
-**Responsibility**: Main chat interface container that orchestrates the chat experience.
+**Responsibility**: Main chat interface container that orchestrates the chat experience with enhanced focus management.
 
 **Props**:
 - `conversationId: string` - The ID of the current conversation
+- `onMessageComplete?: () => void` - Callback for message completion events
 
 **Key Features**:
-- Manages the complete chat flow
-- Integrates MessageList, MessageBubble, and MessageInput
-- Handles message submission and display
-- Manages loading states
+- **Complete Chat Flow**: Manages the entire chat interaction lifecycle
+- **Enhanced Focus Management**: Auto-focuses input on mount and conversation changes
+- **Message Integration**: Integrates MessageList, MessageBubble, and MessageInput
+- **State Management**: Handles message submission, display, and loading states
+- **Error Handling**: Comprehensive error management with retry capabilities
+- **Mobile Optimization**: Responsive behavior with mobile-specific focus handling
+
+**Focus Behavior**:
+- Auto-focuses input when conversation changes (new thread selected)
+- Maintains focus after message submission
+- Disabled on mobile to prevent keyboard popup issues
+- 100ms delay for DOM readiness after conversation switch
 
 **Dependencies**:
-- `useChatApi` hook for API communication
+- `useChatApi` hook for API communication with callback support
 - MessageList, MessageBubble, MessageInput components
 
 ---
@@ -122,41 +143,73 @@ This document outlines the component boundaries, responsibilities, and usage pat
 
 ## Custom Hooks
 
-### useChatApi Hook (`src/hooks/useChatApi.ts`)
-**Responsibility**: Manages chat API communication and message state.
+### useChatApi Hook (`src/hooks/useChatApi.ts`) ✨ **ENHANCED**
+**Responsibility**: Manages chat API communication, message state, and message completion events.
 
 **Parameters**:
 - `conversationId: string` - The conversation context
+- `onMessageComplete?: () => void` - Optional callback for message completion events ✨ **NEW**
 
 **Returns**:
 - `messages: Message[]` - Current conversation messages
 - `send: (input: string) => Promise<void>` - Function to send messages
 - `loading: boolean` - Whether a request is in progress
+- `loadingHistory: boolean` - Whether thread history is being loaded ✨ **NEW**
+- `error: Error | null` - Current error state ✨ **NEW**
+- `clearError: () => void` - Function to clear error state ✨ **NEW**
+- `refreshHistory: () => void` - Function to reload conversation history ✨ **NEW**
 
-**Key Features**:
-- Handles message state management
-- API error handling with user-friendly messages
-- Input validation
-- Loading state management
+**Key Features**: ✨ **ENHANCED**
+- **Message State Management**: Complete lifecycle management for conversation messages
+- **Thread History Loading**: Automatic loading of existing conversation history
+- **Message Completion Callbacks**: Triggers parent updates after successful message exchanges
+- **Enhanced Error Handling**: Comprehensive error management with user-friendly messages
+- **Input Validation**: Prevents empty/whitespace-only message submission
+- **Loading State Management**: Separate states for message sending and history loading
 
 **Dependencies**:
-- `sendMessage` API function
+- `sendMessage` and `getThread` API functions
 - Utility functions: `isBlank`, `parseChatResponse`, `getErrorMessage`
 
 ---
 
-### useConversations Hook (`src/hooks/useConversations.ts`) ✨ **ENHANCED**
-**Responsibility**: Provides conversation thread data and complete thread management operations.
+### useConversations Hook (`src/hooks/useConversations.ts`) ✨ **SIGNIFICANTLY ENHANCED**
+**Responsibility**: Provides comprehensive thread management with React StrictMode compatibility and real-time updates.
+
+**Parameters**: None
 
 **Returns**:
-- `threads: ThreadSummary[]` - Array of available conversation threads with metadata ✨ **NEW**
-- `loading: boolean` - Loading state for thread operations ✨ **NEW**
-- `error: string | null` - Error state for failed operations ✨ **NEW**
-- `createThread: () => Promise<string>` - Function to create new thread ✨ **NEW**
-- `deleteThread: (threadId: string) => Promise<void>` - Function to delete thread ✨ **NEW**
-- `refreshThreads: () => Promise<void>` - Function to reload thread list ✨ **NEW**
+- `threads: Conversation[]` - Array of conversation threads with complete metadata ✨ **ENHANCED**
+- `currentThreadId: string | null` - Currently selected thread ID ✨ **NEW**
+- `loading: boolean` - Loading state for thread operations
+- `error: string | null` - Error state for failed operations  
+- `threadsLoaded: boolean` - Whether initial thread loading is complete ✨ **NEW**
+- `loadThreads: (forceRefresh?: boolean) => Promise<void>` - Load/refresh threads ✨ **ENHANCED**
+- `createThread: (name?: string) => Promise<string | null>` - Create new thread ✨ **ENHANCED**
+- `removeThread: (threadId: string) => Promise<boolean>` - Delete thread ✨ **NEW**
+- `renameThread: (threadId: string, newName: string) => Promise<boolean>` - Rename thread ✨ **NEW**
+- `setCurrentThread: (threadId: string | null) => void` - Set active thread ✨ **NEW**
+- `clearError: () => void` - Clear error state ✨ **NEW**
 
-**Key Features**: ✨ **ENHANCED**
+**Key Features**: ✨ **SIGNIFICANTLY ENHANCED**
+- **React StrictMode Compatibility**: Global flags prevent duplicate thread creation during development
+- **Intelligent Thread Loading**: Distinguishes between initial load and force refresh operations  
+- **Real-time Thread Updates**: Force refresh capability for post-message thread list updates
+- **Complete CRUD Operations**: Create, read, update, delete operations for threads
+- **Thread Validation**: Integration with backend validation for thread integrity
+- **Optimized State Management**: Local state updates for immediate UI feedback
+- **Error Recovery**: Comprehensive error handling with recovery mechanisms
+- **Performance Optimization**: Prevents unnecessary API calls while allowing forced updates
+
+**Thread Management Features**:
+- **Duplicate Prevention**: Global initialization flags prevent React StrictMode issues
+- **Timing Control**: Proper sequencing of initialization and thread loading
+- **State Synchronization**: Real-time updates after message exchanges
+- **Memory Management**: Efficient cleanup and state management
+
+**Dependencies**:
+- API functions: `getAllThreads`, `createNewThread`, `deleteThread`, `updateThreadName`
+- Thread type definitions and conversation state interfaces
 - Dynamic thread list loading from API
 - Real-time thread creation and deletion
 - Thread state synchronization with backend
