@@ -16,6 +16,7 @@ export default function App() {
     loading,
     error,
     threadsLoaded,
+    loadThreads,
     clearError
   } = useConversations();
   
@@ -46,6 +47,12 @@ export default function App() {
         setCurrentThread(remainingThreads[0].id);
       }
     }
+  };
+
+  // Handle message completion - refresh threads to update lastMessage
+  const handleMessageComplete = async (): Promise<void> => {
+    console.log('[App] Message exchange completed - refreshing threads list');
+    await loadThreads(true); // Force refresh to update lastMessage
   };
   
   // Initialize with first thread if available, or create one if none exist
@@ -178,7 +185,10 @@ export default function App() {
           aria-label="Chat interface"
         >
           {currentThreadId ? (
-            <ChatPage conversationId={currentThreadId} />
+            <ChatPage 
+              conversationId={currentThreadId} 
+              onMessageComplete={handleMessageComplete}
+            />
           ) : (
             <div className="flex items-center justify-center h-full">
               <div className="text-gray-500 text-center">

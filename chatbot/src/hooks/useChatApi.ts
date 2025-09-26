@@ -5,7 +5,7 @@ import { isBlank } from '../utils/isBlank';
 import { parseChatResponse } from '../utils/parseChatResponse';
 import { getErrorMessage } from '../utils/getErrorMessage';
 
-export function useChatApi(conversationId: string) {
+export function useChatApi(conversationId: string, onMessageComplete?: () => void) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(false);
@@ -61,6 +61,11 @@ export function useChatApi(conversationId: string) {
         ...msgs,
         { role: 'assistant', content: parseChatResponse(res) }
       ]);
+      
+      // Notify parent component that a message exchange completed successfully
+      if (onMessageComplete) {
+        onMessageComplete();
+      }
     } catch (error) {
       const errorInstance = error instanceof Error ? error : new Error(getErrorMessage(error));
       setError(errorInstance);

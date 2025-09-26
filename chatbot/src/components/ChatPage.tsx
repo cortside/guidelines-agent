@@ -10,7 +10,10 @@ import { NetworkError } from './common/NetworkError';
 import { ErrorBoundary } from './common/ErrorBoundary';
 import { LoadingSpinner } from './common/LoadingSpinner';
 
-export function ChatPage({ conversationId }: Readonly<{ conversationId: string }>) {
+export function ChatPage({ conversationId, onMessageComplete }: Readonly<{ 
+  conversationId: string;
+  onMessageComplete?: () => void;
+}>) {
   const { 
     messages, 
     send, 
@@ -18,7 +21,7 @@ export function ChatPage({ conversationId }: Readonly<{ conversationId: string }
     loadingHistory,
     error: apiError, 
     clearError: clearApiError 
-  } = useChatApi(conversationId);
+  } = useChatApi(conversationId, onMessageComplete);
   const [input, setInput] = useState('');
   const historyRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -31,11 +34,14 @@ export function ChatPage({ conversationId }: Readonly<{ conversationId: string }
   }, [messages]);
 
   useEffect(() => {
-    // Focus input on mount, but not on mobile to avoid keyboard popping up
+    // Focus input on mount or when conversation changes, but not on mobile to avoid keyboard popping up
     if (!isMobile) {
-      focusElement(textareaRef.current);
+      // Add a small delay to ensure DOM is ready after conversation switch
+      setTimeout(() => {
+        focusElement(textareaRef.current);
+      }, 100);
     }
-  }, [isMobile]);
+  }, [conversationId, isMobile]); // Focus when conversationId changes
 
   useEffect(() => {
     // Focus input after sending (when input transitions from non-empty to empty)

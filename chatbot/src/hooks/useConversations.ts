@@ -21,12 +21,18 @@ export function useConversations() {
   const threadsLoaded = useRef(false);
 
   // Load threads from API
-  const loadThreads = useCallback(async () => {
-    console.log('useConversations: loadThreads called');
+  const loadThreads = useCallback(async (forceRefresh = false) => {
+    console.log('useConversations: loadThreads called', { forceRefresh });
     
-    // Prevent multiple simultaneous loadThreads calls
-    if (loadingThreads.current || threadsLoaded.current) {
-      console.log('useConversations: loadThreads already in progress or completed, skipping');
+    // Prevent multiple simultaneous loadThreads calls, but allow forced refresh
+    if (loadingThreads.current) {
+      console.log('useConversations: loadThreads already in progress, skipping');
+      return;
+    }
+    
+    // Skip if already loaded unless it's a forced refresh
+    if (threadsLoaded.current && !forceRefresh) {
+      console.log('useConversations: threads already loaded and not forced refresh, skipping');
       return;
     }
     
