@@ -1,6 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { getAllThreads, createNewThread, deleteThread, updateThreadName } from '../lib/api';
 import type { ConversationState, Conversation } from '../types/conversation';
+
+// Global flag to prevent multiple thread creation during app initialization
+let globalInitializationInProgress = false;
 
 export function useConversations() {
   const [state, setState] = useState<ConversationState>({
@@ -10,23 +13,54 @@ export function useConversations() {
     error: null,
   });
 
+  // Add a ref to track ongoing thread creation to prevent duplicates in React StrictMode
+  const creatingThread = useRef(false);
+  // Add a ref to track ongoing thread loading to prevent duplicate API calls
+  const loadingThreads = useRef(false);
+  // Add a ref to track if threads have been loaded initially
+  const threadsLoaded = useRef(false);
+
   // Load threads from API
   const loadThreads = useCallback(async () => {
+    console.log('useConversations: loadThreads called');
+    
+    // Prevent multiple simultaneous loadThreads calls
+    if (loadingThreads.current || threadsLoaded.current) {
+      console.log('useConversations: loadThreads already in progress or completed, skipping');
+      return;
+    }
+    
+    loadingThreads.current = true;
     setState(prev => ({ ...prev, loading: true, error: null }));
     
     try {
       const threads = await getAllThreads();
+      console.log('useConversations: getAllThreads returned', threads.length, 'threads');
       
-      // Convert API response to local format
-      const conversations: Conversation[] = threads.map(thread => ({
-        id: thread.threadId,
-        name: thread.name,
-        lastMessage: thread.lastMessage,
-        lastActivity: new Date(thread.lastActivity),
-        messageCount: thread.messageCount,
-        createdAt: new Date(thread.createdAt),
-      }));
+      // Convert API response to local format and sort intelligently
+      const conversations: Conversation[] = threads
+        .map(thread => ({
+          id: thread.threadId,
+          name: thread.name,
+          lastMessage: thread.lastMessage,
+          lastActivity: new Date(thread.lastActivity),
+          messageCount: thread.messageCount,
+          createdAt: new Date(thread.createdAt),
+        }))
+        .sort((a, b) => {
+          // Check if all lastActivity dates are very close (within 1 minute)
+          // This would indicate they're just current timestamps from server restarts
+          const timeDiff = Math.abs(a.lastActivity.getTime() - b.lastActivity.getTime());
+          if (timeDiff < 60000) { // Less than 1 minute difference
+            // Fall back to sorting by createdAt (most recent first)
+            return b.createdAt.getTime() - a.createdAt.getTime();
+          } else {
+            // Sort by lastActivity (most recent first)
+            return b.lastActivity.getTime() - a.lastActivity.getTime();
+          }
+        });
 
+      console.log('useConversations: Setting state with', conversations.length, 'conversations');
       setState(prev => ({
         ...prev,
         threads: conversations,
@@ -38,25 +72,70 @@ export function useConversations() {
         loading: false,
         error: error instanceof Error ? error.message : 'Failed to load conversations',
       }));
+    } finally {
+      // Reset the loading lock and mark as loaded
+      loadingThreads.current = false;
+      threadsLoaded.current = true;
     }
   }, []);
 
   // Create new thread
   const createThread = useCallback(async (name?: string): Promise<string | null> => {
+    console.log('useConversations: createThread called with name:', name);
+    
+    // Global protection against multiple thread creation during app initialization
+    if (globalInitializationInProgress) {
+      console.log('useConversations: Global initialization in progress, skipping thread creation');
+      return null;
+    }
+    
+    // Prevent duplicate thread creation during React StrictMode double-rendering
+    if (creatingThread.current) {
+      console.log('useConversations: Thread creation already in progress, skipping');
+      return null;
+    }
+    
+    console.trace('useConversations: createThread called from:');
+    
+    // Set both local and global flags
+    creatingThread.current = true;
+    globalInitializationInProgress = true;
     setState(prev => ({ ...prev, error: null }));
     
     try {
       const result = await createNewThread(name);
-      await loadThreads(); // Refresh the list
+      console.log('useConversations: Thread created with ID:', result.threadId);
+      // Don't reload all threads, just add the new thread to the list
+      const newThread = {
+        id: result.threadId,
+        name: name || 'New Conversation',
+        lastMessage: '',
+        lastActivity: new Date(),
+        messageCount: 0,
+        createdAt: new Date(),
+      };
+      
+      setState(prev => ({
+        ...prev,
+        threads: [newThread, ...prev.threads], // Add to beginning of list
+      }));
+      
       return result.threadId;
     } catch (error) {
+      console.error('useConversations: Error creating thread:', error);
       setState(prev => ({
         ...prev,
         error: error instanceof Error ? error.message : 'Failed to create conversation',
       }));
       return null;
+    } finally {
+      // Reset the creation lock after a longer delay to prevent React StrictMode issues
+      setTimeout(() => {
+        creatingThread.current = false;
+        globalInitializationInProgress = false;
+      }, 1000); // Keep 1000ms delay
     }
-  }, [loadThreads]);
+  }, []); // No dependencies to break the cycle
 
   // Delete thread
   const removeThread = useCallback(async (threadId: string): Promise<boolean> => {
@@ -64,12 +143,13 @@ export function useConversations() {
     
     try {
       await deleteThread(threadId);
-      await loadThreads(); // Refresh the list
-      
-      // If deleted thread was current, clear selection
-      if (state.currentThreadId === threadId) {
-        setState(prev => ({ ...prev, currentThreadId: null }));
-      }
+      // Remove thread from local state instead of reloading all
+      setState(prev => ({
+        ...prev,
+        threads: prev.threads.filter(thread => thread.id !== threadId),
+        // Clear currentThreadId if it was the deleted thread
+        currentThreadId: prev.currentThreadId === threadId ? null : prev.currentThreadId,
+      }));
       
       return true;
     } catch (error) {
@@ -79,7 +159,7 @@ export function useConversations() {
       }));
       return false;
     }
-  }, [loadThreads, state.currentThreadId]);
+  }, []); // No dependencies
 
   // Rename thread
   const renameThread = useCallback(async (threadId: string, newName: string): Promise<boolean> => {
@@ -87,7 +167,14 @@ export function useConversations() {
     
     try {
       await updateThreadName(threadId, newName);
-      await loadThreads(); // Refresh the list
+      // Update thread name in local state instead of reloading all
+      setState(prev => ({
+        ...prev,
+        threads: prev.threads.map(thread => 
+          thread.id === threadId ? { ...thread, name: newName } : thread
+        ),
+      }));
+      
       return true;
     } catch (error) {
       setState(prev => ({
@@ -96,7 +183,7 @@ export function useConversations() {
       }));
       return false;
     }
-  }, [loadThreads]);
+  }, []); // No dependencies
 
   // Set current thread
   const setCurrentThread = useCallback((threadId: string | null) => {
@@ -111,13 +198,14 @@ export function useConversations() {
   // Load threads on mount
   useEffect(() => {
     loadThreads();
-  }, [loadThreads]);
+  }, []); // Empty dependency array to only run once
 
   return {
     threads: state.threads,
     currentThreadId: state.currentThreadId,
     loading: state.loading,
     error: state.error,
+    threadsLoaded: threadsLoaded.current, // Expose whether initial load is complete
     loadThreads,
     createThread,
     removeThread,

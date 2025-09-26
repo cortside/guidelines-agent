@@ -109,19 +109,14 @@ export class ThreadsController {
    */
   async createThread(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { name } = req.body;
+      // Handle cases where req.body might be undefined or malformed
+      const name = req.body?.name || undefined;
       
       // Generate new thread ID
       const threadId = `thread-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       
-      // Create thread metadata with placeholder message for name generation
-      const placeholderMessage = name || "New conversation";
-      this.threadManagementService.updateThreadMetadata(threadId, placeholderMessage, true);
-      
-      // If custom name provided, update it
-      if (name) {
-        this.threadManagementService.updateThreadName(threadId, name);
-      }
+      // Create thread metadata without treating as message activity
+      this.threadManagementService.createThreadMetadata(threadId, name);
       
       res.status(201).json({ threadId });
     } catch (error) {
@@ -231,6 +226,44 @@ export class ThreadsController {
       }
 
       res.json({ success: true });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Get thread storage statistics for debugging
+   * @swagger
+   * /threads/stats:
+   *   get:
+   *     summary: Get thread storage statistics
+   *     description: Retrieves debugging information about thread storage
+   *     tags: [Threads]
+   *     responses:
+   *       200:
+   *         description: Thread storage statistics retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 totalThreads:
+   *                   type: integer
+   *                 oldestThread:
+   *                   type: object
+   *                 newestThread:
+   *                   type: object
+   *                 mostActiveThread:
+   *                   type: object
+   *                 averageMessageCount:
+   *                   type: number
+   *       500:
+   *         description: Internal server error
+   */
+  async getThreadStats(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const stats = this.threadManagementService.getStorageStats();
+      res.json(stats);
     } catch (error) {
       next(error);
     }

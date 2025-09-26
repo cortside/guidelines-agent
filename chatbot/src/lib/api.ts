@@ -41,7 +41,10 @@ export async function getThread(threadId: string): Promise<ThreadResponse> {
 }
 
 export async function createNewThread(name?: string): Promise<{ threadId: string }> {
+  console.log('API: Creating new thread with name:', name);
+  console.trace('API: createNewThread called from:');
   const res = await axios.post(`${API_URL}/threads`, name ? { name } : {});
+  console.log('API: Thread created successfully:', res.data);
   return res.data;
 }
 

@@ -4,6 +4,9 @@ import { ThreadsController } from "../controllers/threadsController.js";
 export function createThreadsRouter(threadsController: ThreadsController): Router {
   const router = Router();
 
+  // GET /threads/stats - Get thread storage statistics (must be before /:threadId)
+  router.get("/stats", threadsController.getThreadStats.bind(threadsController));
+
   // GET /threads - Get all threads
   router.get("/", threadsController.getAllThreads.bind(threadsController));
 

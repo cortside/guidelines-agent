@@ -42,6 +42,9 @@ export class ChatService {
     const promptTemplate = PromptService.ragPromptTemplate;
     this.graph = WorkflowService.create(this.vectorStore, this.llm, promptTemplate);
     
+    // Validate thread metadata against actual agent data
+    await this.threadManagementService.initializeWithValidation(this);
+    
     console.log("ChatService initialization complete.");
   }
 
@@ -100,6 +103,8 @@ export class ChatService {
     }
 
     try {
+      const messageStartTime = new Date(); // Track when message processing starts
+      
       // Specify an ID for the thread
       const threadConfig = {
         configurable: { thread_id: threadId },
@@ -120,8 +125,8 @@ export class ChatService {
         inputs.messages.push(new SystemMessage(systemMessage));
       }
 
-      // Update thread metadata before processing
-      this.threadManagementService.updateThreadMetadata(threadId, content, isNewThread);
+      // Create or update thread metadata (but don't set final activity time yet)
+      this.threadManagementService.updateThreadMetadata(threadId, content, isNewThread, messageStartTime);
 
       inputs.messages.push(new HumanMessage(content));
       
@@ -129,6 +134,10 @@ export class ChatService {
       for await (const step of await this.graph.stream(inputs, threadConfig)) {
         lastMessage = step.messages[step.messages.length - 1];
       }
+      
+      // Update the actual activity time after message processing is complete
+      const messageCompletedTime = new Date();
+      this.threadManagementService.updateThreadActivity(threadId, messageCompletedTime);
       
       if (lastMessage) {
         return typeof lastMessage.content === "string"
@@ -203,5 +212,27 @@ export class ChatService {
       throw new Error("ChatService not initialized. Call initialize() first.");
     }
     return this.threadManagementService;
+  }
+
+  /**
+   * Get all existing thread IDs from the LangGraph agent
+   * This method attempts to discover all threads by checking the agent's state store
+   */
+  async discoverExistingThreads(): Promise<string[]> {
+    if (!this.graph) {
+      console.log("ChatService: Graph not initialized, no threads to discover");
+      return [];
+    }
+
+    // Note: LangGraph doesn't provide a direct method to list all threads
+    // This is a limitation of the current LangGraph API
+    // For now, we'll return an empty array and rely on the thread metadata file
+    // In a production system, you might need to:
+    // 1. Store thread IDs in a separate database
+    // 2. Use a different state store that supports listing keys
+    // 3. Implement a custom tracking mechanism
+
+    console.log("ChatService: Thread discovery not supported by LangGraph, using existing metadata");
+    return [];
   }
 }

@@ -1,50 +1,58 @@
 import React, { useState } from 'react';
-import { useConversations } from '../../hooks/useConversations';
+import type { Conversation } from '../../types/conversation';
 
 interface SidebarProps {
   selected: string;
   onSelect: (id: string) => void;
   onClose?: () => void;
+  threads: Conversation[];
+  loading: boolean;
+  error: string | null;
+  onCreateThread: () => Promise<void>;
+  onDeleteThread: (threadId: string) => Promise<void>;
+  onClearError: () => void;
 }
 
-export function Sidebar({ selected, onSelect, onClose }: Readonly<SidebarProps>) {
-  const {
-    threads,
-    loading,
-    error,
-    createThread,
-    removeThread,
-    clearError,
-  } = useConversations();
-  
+export function Sidebar({ 
+  selected, 
+  onSelect, 
+  onClose, 
+  threads,
+  loading,
+  error,
+  onCreateThread,
+  onDeleteThread,
+  onClearError
+}: Readonly<SidebarProps>) {
   const [isCreating, setIsCreating] = useState(false);
 
   const handleCreateThread = async () => {
     setIsCreating(true);
-    const threadId = await createThread();
-    if (threadId) {
-      onSelect(threadId);
-    }
+    await onCreateThread();
     setIsCreating(false);
   };
 
   const handleDeleteThread = async (threadId: string, event: React.MouseEvent) => {
     event.stopPropagation();
     if (confirm('Are you sure you want to delete this conversation?')) {
-      await removeThread(threadId);
+      await onDeleteThread(threadId);
     }
   };
 
   const formatLastActivity = (date: Date): string => {
     const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
+    // Ensure date is a Date object (in case it comes as a string from API)
+    const activityDate = new Date(date);
+    const diffMs = now.getTime() - activityDate.getTime();
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
     const diffDays = Math.floor(diffHours / 24);
 
-    if (diffHours < 1) return 'Just now';
+    if (diffMinutes < 1) return 'Just now';
+    if (diffMinutes < 60) return `${diffMinutes}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
     if (diffDays < 7) return `${diffDays}d ago`;
-    return date.toLocaleDateString();
+    return activityDate.toLocaleDateString();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent, convId: string) => {
@@ -93,7 +101,7 @@ export function Sidebar({ selected, onSelect, onClose }: Readonly<SidebarProps>)
         <div className="mb-4 p-2 bg-red-100 border border-red-300 rounded text-sm">
           <div className="text-red-700">{error}</div>
           <button
-            onClick={clearError}
+            onClick={onClearError}
             className="text-red-600 hover:text-red-800 text-xs mt-1"
           >
             Dismiss
@@ -114,42 +122,46 @@ export function Sidebar({ selected, onSelect, onClose }: Readonly<SidebarProps>)
             </div>
           ) : (
             <ul className="space-y-1">
-              {threads.map((thread) => (
+              {threads.map((thread: Conversation) => (
                 <li key={thread.id}>
-                  <button
-                    className={`w-full text-left px-3 py-2 rounded-md group hover:bg-gray-200 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 ${
+                  <div
+                    className={`relative w-full text-left px-3 py-2 rounded-md group hover:bg-gray-200 transition-colors duration-200 ${
                       selected === thread.id 
                         ? 'bg-blue-200 text-blue-900' 
                         : 'text-gray-700'
                     }`}
-                    onClick={() => onSelect(thread.id)}
-                    onKeyDown={(e) => handleKeyDown(e, thread.id)}
-                    aria-pressed={selected === thread.id}
                   >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-sm truncate">
-                          {thread.name}
-                        </div>
-                        {thread.lastMessage && (
-                          <div className="text-xs text-gray-600 truncate mt-1">
-                            {thread.lastMessage}
+                    <button
+                      className="w-full text-left focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded"
+                      onClick={() => onSelect(thread.id)}
+                      onKeyDown={(e) => handleKeyDown(e, thread.id)}
+                      aria-pressed={selected === thread.id}
+                    >
+                      <div className="flex items-start justify-between pr-8">
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-sm truncate">
+                            {thread.name}
                           </div>
-                        )}
-                        <div className="text-xs text-gray-500 mt-1">
-                          {formatLastActivity(thread.lastActivity)} • {thread.messageCount} msgs
+                          {thread.lastMessage && (
+                            <div className="text-xs text-gray-600 truncate mt-1">
+                              {thread.lastMessage}
+                            </div>
+                          )}
+                          <div className="text-xs text-gray-500 mt-1">
+                            {formatLastActivity(thread.lastActivity)} • {thread.messageCount} msgs
+                          </div>
                         </div>
                       </div>
-                      <button
-                        onClick={(e) => handleDeleteThread(thread.id, e)}
-                        className="opacity-0 group-hover:opacity-100 ml-2 text-red-500 hover:text-red-700 text-xs p-1 focus:outline-none focus:ring-1 focus:ring-red-300 rounded"
-                        title="Delete conversation"
-                        aria-label={`Delete conversation ${thread.name}`}
-                      >
-                        ×
-                      </button>
-                    </div>
-                  </button>
+                    </button>
+                    <button
+                      onClick={(e) => handleDeleteThread(thread.id, e)}
+                      className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-700 text-xs p-1 focus:outline-none focus:ring-1 focus:ring-red-300 rounded focus:opacity-100"
+                      title="Delete conversation"
+                      aria-label={`Delete conversation ${thread.name}`}
+                    >
+                      ×
+                    </button>
+                  </div>
                   {selected === thread.id && (
                     <div className="sr-only" aria-live="polite">
                       Currently selected conversation: {thread.name}
