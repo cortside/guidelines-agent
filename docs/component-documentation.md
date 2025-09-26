@@ -95,21 +95,28 @@ This document outlines the component boundaries, responsibilities, and usage pat
 ---
 
 ### Sidebar Component (`src/components/Sidebar/Sidebar.tsx`)
-**Responsibility**: Navigation sidebar for conversation management.
+**Responsibility**: Dynamic navigation sidebar for conversation thread management with full CRUD operations.
 
 **Props**:
-- `conversations: Conversation[]` - Array of available conversations
-- `selected: string` - ID of currently selected conversation
-- `onSelect: (id: string) => void` - Callback for conversation selection
+- `conversations: ThreadSummary[]` - Array of conversation threads with metadata
+- `selected: string` - ID of currently selected conversation thread
+- `onSelect: (id: string) => void` - Callback for thread selection
+- `onCreate: () => void` - Callback for creating new threads ✨ **NEW**
+- `onDelete: (id: string) => void` - Callback for deleting threads ✨ **NEW**
 
-**Key Features**:
-- Displays list of conversations
-- Highlights currently selected conversation
-- Handles conversation switching
-- Provides consistent navigation UI
+**Key Features**: ✨ **ENHANCED**
+- Displays dynamic list of conversation threads from API
+- Highlights currently selected conversation thread
+- Handles conversation switching with preserved history
+- "New Thread" creation button with loading states
+- Thread deletion with confirmation dialogs
+- Real-time thread list updates
+- Loading and error state management
+- Thread metadata display (name, last activity, message count)
 
 **Dependencies**:
-- Conversation type definition
+- ThreadSummary type definition ✨ **NEW**
+- Enhanced conversation management hooks
 
 ---
 
@@ -138,16 +145,29 @@ This document outlines the component boundaries, responsibilities, and usage pat
 
 ---
 
-### useConversations Hook (`src/hooks/useConversations.ts`)
-**Responsibility**: Provides conversation data and management.
+### useConversations Hook (`src/hooks/useConversations.ts`) ✨ **ENHANCED**
+**Responsibility**: Provides conversation thread data and complete thread management operations.
 
 **Returns**:
-- `Conversation[]` - Array of available conversations
+- `threads: ThreadSummary[]` - Array of available conversation threads with metadata ✨ **NEW**
+- `loading: boolean` - Loading state for thread operations ✨ **NEW**
+- `error: string | null` - Error state for failed operations ✨ **NEW**
+- `createThread: () => Promise<string>` - Function to create new thread ✨ **NEW**
+- `deleteThread: (threadId: string) => Promise<void>` - Function to delete thread ✨ **NEW**
+- `refreshThreads: () => Promise<void>` - Function to reload thread list ✨ **NEW**
 
-**Key Features**:
-- Provides mock conversation data
-- Can be extended for real conversation management
-- Centralized conversation state
+**Key Features**: ✨ **ENHANCED**
+- Dynamic thread list loading from API
+- Real-time thread creation and deletion
+- Thread state synchronization with backend
+- Comprehensive error handling and loading states
+- Thread metadata management (names, activity, message counts)
+- Optimistic UI updates with rollback on failure
+
+**Dependencies**:
+- Thread management API functions (getAllThreads, createNewThread, deleteThread)
+- ThreadSummary type definitions
+- Error handling utilities
 
 ---
 

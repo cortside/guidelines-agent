@@ -5,6 +5,7 @@ import { config } from "./config/index.js";
 import { ChatService } from "./services/chatService.js";
 import { ChatController } from "./controllers/chatController.js";
 import { HealthController } from "./controllers/healthController.js";
+import { ThreadsController } from "./controllers/threadsController.js";
 import { createRoutes } from "./routes/index.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 
@@ -21,6 +22,7 @@ async function startServer() {
     // Initialize controllers
     const chatController = new ChatController(chatService);
     const healthController = new HealthController();
+    const threadsController = new ThreadsController(chatService.getThreadManagementService());
     
     // Create Express app
     const app = express();
@@ -30,7 +32,7 @@ async function startServer() {
     app.use(bodyParser.json());
     
     // Routes
-    app.use(createRoutes(chatController, healthController));
+    app.use(createRoutes(chatController, healthController, threadsController));
     
     // Error handling middleware (must be last)
     app.use(errorHandler);

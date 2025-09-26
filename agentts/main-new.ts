@@ -5,6 +5,7 @@ import { config } from "./src/config/index.js";
 import { ChatService } from "./src/services/chatService.js";
 import { ChatController } from "./src/controllers/chatController.js";
 import { HealthController } from "./src/controllers/healthController.js";
+import { ThreadsController } from "./src/controllers/threadsController.js";
 import { createRoutes } from "./src/routes/index.js";
 import { errorHandler } from "./src/middleware/errorHandler.js";
 import { setupSwagger } from "./src/config/swagger.js";
@@ -22,6 +23,7 @@ async function startServer() {
     // Initialize controllers
     const chatController = new ChatController(chatService);
     const healthController = new HealthController();
+    const threadsController = new ThreadsController(chatService.getThreadManagementService());
     
     // Create Express app
     const app = express();
@@ -34,7 +36,7 @@ async function startServer() {
     setupSwagger(app);
     
     // Routes
-    app.use(createRoutes(chatController, healthController));
+    app.use(createRoutes(chatController, healthController, threadsController));
     
     // Error handling middleware (must be last)
     app.use(errorHandler);

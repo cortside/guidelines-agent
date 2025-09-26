@@ -11,7 +11,14 @@ import { ErrorBoundary } from './common/ErrorBoundary';
 import { LoadingSpinner } from './common/LoadingSpinner';
 
 export function ChatPage({ conversationId }: Readonly<{ conversationId: string }>) {
-  const { messages, send, loading, error: apiError, clearError: clearApiError } = useChatApi(conversationId);
+  const { 
+    messages, 
+    send, 
+    loading, 
+    loadingHistory,
+    error: apiError, 
+    clearError: clearApiError 
+  } = useChatApi(conversationId);
   const [input, setInput] = useState('');
   const historyRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -85,25 +92,35 @@ export function ChatPage({ conversationId }: Readonly<{ conversationId: string }
         aria-live="polite"
         aria-atomic="false"
       >
-        <MessageList messages={messages} />
-        
-        {/* Loading State */}
-        {loading && (
+        {loadingHistory ? (
           <LoadingSpinner 
-            size="md" 
-            message="Assistant is thinking..."
-            className="my-4"
+            size="lg" 
+            message="Loading conversation history..."
+            className="flex items-center justify-center h-full"
           />
-        )}
-        
-        {/* Error States */}
-        {(isError || apiError) && (
-          <NetworkError
-            error={error || apiError || new Error('Unknown error')}
-            onRetry={handleRetry}
-            onDismiss={clearError}
-            className="my-4"
-          />
+        ) : (
+          <>
+            <MessageList messages={messages} />
+            
+            {/* Loading State */}
+            {loading && (
+              <LoadingSpinner 
+                size="md" 
+                message="Assistant is thinking..."
+                className="my-4"
+              />
+            )}
+            
+            {/* Error States */}
+            {(isError || apiError) && (
+              <NetworkError
+                error={error || apiError || new Error('Unknown error')}
+                onRetry={handleRetry}
+                onDismiss={clearError}
+                className="my-4"
+              />
+            )}
+          </>
         )}
       </section>
       

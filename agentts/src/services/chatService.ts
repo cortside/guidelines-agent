@@ -11,15 +11,20 @@ import { DocumentService } from "./documentService.js";
 import { createVectorStore } from "../infrastructure/vectorStore.js";
 import { createChatLLM } from "../infrastructure/llm.js";
 import { config } from "../config/index.js";
+import { ThreadManagementService } from "./threadManagementService.js";
 
 export class ChatService {
   private vectorStore: VectorStore | null = null;
   private llm: ChatOpenAI | null = null;
   private graph: any | null = null;
   private documentService: DocumentService | null = null;
+  private threadManagementService!: ThreadManagementService;
 
   async initialize(): Promise<void> {
     console.log("Initializing ChatService...");
+    
+    // Initialize thread management service
+    this.threadManagementService = new ThreadManagementService();
     
     // Initialize LLM
     this.llm = createChatLLM();
@@ -105,13 +110,18 @@ export class ChatService {
 
       // Check if the thread exists by inspecting the graph's state history
       const history = await this.graph.getStateHistory(threadConfig).next();
-      if (!history.done && history.value) {
+      const isNewThread = history.done || !history.value;
+      
+      if (!isNewThread) {
         // thread already exists
       } else {
         console.log(`Creating new thread with ID: ${threadId}`);
         const systemMessage = PromptService.createSystemMessage(this.documentService.tags);
         inputs.messages.push(new SystemMessage(systemMessage));
       }
+
+      // Update thread metadata before processing
+      this.threadManagementService.updateThreadMetadata(threadId, content, isNewThread);
 
       inputs.messages.push(new HumanMessage(content));
       
@@ -183,5 +193,15 @@ export class ChatService {
       console.error("Error getting thread history:", error);
       throw error;
     }
+  }
+
+  /**
+   * Get the thread management service for external use
+   */
+  getThreadManagementService(): ThreadManagementService {
+    if (!this.threadManagementService) {
+      throw new Error("ChatService not initialized. Call initialize() first.");
+    }
+    return this.threadManagementService;
   }
 }

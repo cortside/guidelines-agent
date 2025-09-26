@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { sendMessage } from '../lib/api';
+import { useState, useEffect, useCallback } from 'react';
+import { sendMessage, getThread } from '../lib/api';
 import { Message } from '../types/message';
 import { isBlank } from '../utils/isBlank';
 import { parseChatResponse } from '../utils/parseChatResponse';
@@ -8,7 +8,45 @@ import { getErrorMessage } from '../utils/getErrorMessage';
 export function useChatApi(conversationId: string) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingHistory, setLoadingHistory] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+
+  // Load thread history when conversationId changes
+  const loadThreadHistory = useCallback(async (threadId: string) => {
+    if (!threadId) return;
+    
+    setLoadingHistory(true);
+    setError(null);
+    
+    try {
+      const threadData = await getThread(threadId);
+      
+      // Convert thread messages to our Message format
+      const threadMessages: Message[] = threadData.messages
+        .filter(msg => msg.type === 'human' || msg.type === 'ai')
+        .map(msg => ({
+          role: msg.type === 'human' ? 'user' as const : 'assistant' as const,
+          content: msg.content
+        }));
+      
+      setMessages(threadMessages);
+    } catch (error) {
+      // If thread doesn't exist or error loading, start with empty messages
+      console.log('Could not load thread history, starting fresh:', error);
+      setMessages([]);
+    } finally {
+      setLoadingHistory(false);
+    }
+  }, []);
+
+  // Load history when conversation ID changes
+  useEffect(() => {
+    if (conversationId) {
+      loadThreadHistory(conversationId);
+    } else {
+      setMessages([]);
+    }
+  }, [conversationId, loadThreadHistory]);
 
   const send = async (input: string) => {
     if (isBlank(input)) return;
@@ -39,5 +77,13 @@ export function useChatApi(conversationId: string) {
 
   const clearError = () => setError(null);
 
-  return { messages, send, loading, error, clearError };
+  return { 
+    messages, 
+    send, 
+    loading, 
+    loadingHistory, 
+    error, 
+    clearError,
+    refreshHistory: () => loadThreadHistory(conversationId)
+  };
 }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChatPage } from './components/ChatPage';
 import { Sidebar } from './components/Sidebar/Sidebar';
 import { useConversations } from './hooks/useConversations';
@@ -16,16 +16,35 @@ function generateGuid() {
 }
 
 export default function App() {
-  const conversations = useConversations();
-  const [threadId] = useState<string>(generateGuid());
-  const [selectedConversation, setSelectedConversation] = useState<string>(conversations[0]?.id || threadId);
+  const { 
+    threads, 
+    currentThreadId, 
+    setCurrentThread, 
+    createThread,
+    loading 
+  } = useConversations();
+  
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { isMobile, sidebarWidth, padding } = useResponsive();
+  
+  // Initialize with first thread or create new one
+  useEffect(() => {
+    if (!loading && threads.length > 0 && !currentThreadId) {
+      setCurrentThread(threads[0].id);
+    } else if (!loading && threads.length === 0 && !currentThreadId) {
+      // Create first thread automatically
+      createThread().then((threadId) => {
+        if (threadId) {
+          setCurrentThread(threadId);
+        }
+      });
+    }
+  }, [threads, currentThreadId, loading, setCurrentThread, createThread]);
   
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
   
   const handleConversationSelect = (id: string) => {
-    setSelectedConversation(id);
+    setCurrentThread(id);
     if (isMobile) setSidebarOpen(false); // Close sidebar on mobile after selection
   };
 
@@ -62,8 +81,7 @@ export default function App() {
           className={`${sidebarWidth} transition-all duration-300 ease-in-out ${getSidebarClasses()}`}
         >
           <Sidebar 
-            conversations={conversations} 
-            selected={selectedConversation} 
+            selected={currentThreadId || ''} 
             onSelect={handleConversationSelect}
             onClose={isMobile ? () => setSidebarOpen(false) : undefined}
           />
@@ -84,7 +102,7 @@ export default function App() {
           className={`flex-1 overflow-hidden ${isMobile ? 'ml-0' : ''}`}
           aria-label="Chat interface"
         >
-          <ChatPage conversationId={selectedConversation} />
+          <ChatPage conversationId={currentThreadId || generateGuid()} />
         </main>
       </div>
     </ErrorBoundary>
