@@ -1,12 +1,17 @@
 {
   "type": "module",
   "dependencies": {
+    "@fastify/cors": "^8.4.0",
+    "@fastify/swagger": "^8.12.0",
+    "@fastify/swagger-ui": "^2.1.0",
+    "@fastify/type-provider-typebox": "^3.5.0",
     "@langchain/community": "^0.3.53",
     "@langchain/core": "^0.3.75",
     "@langchain/langgraph": "^0.4.6",
     "@langchain/openai": "^0.6.11",
     "@langchain/pinecone": "^0.2.0",
     "@pinecone-database/pinecone": "^5.1.2",
+    "@sinclair/typebox": "^0.31.28",
     "@types/body-parser": "^1.19.6",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
@@ -14,8 +19,9 @@
     "cheerio": "^1.0.0-rc.12",
     "chromadb": "^3.0.14",
     "cors": "^2.8.5",
-    "dotenv": "^17.2.2",
+    "dotenv": "^16.4.5",
     "express": "^5.1.0",
+    "fastify": "^4.24.3",
     "langchain": "^0.3.31",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
@@ -28,14 +34,17 @@
     "@types/swagger-ui-express": "^4.1.8",
     "@types/yamljs": "^0.2.34",
     "eslint": "^8.56.0",
-    "ts-node": "^10.9.2"
+    "ts-node": "^10.9.2",
+    "typescript": "^5.6.3"
   },
   "scripts": {
     "build": "tsc",
-    "start": "node dist/main-new.js",
-    "start:old": "node dist/main.js",
-    "dev": "node --loader ts-node/esm main-new.ts",
-    "dev:old": "node --loader ts-node/esm main.ts",
+    "start": "node dist/src/fastify-main.js",
+    "start:express": "node dist/main-new.js",
+    "start:fastify": "node dist/src/fastify-main.js",
+    "dev": "node --loader ts-node/esm src/fastify-main.ts",
+    "dev:express": "node --loader ts-node/esm main-new.ts",
+    "dev:fastify": "node --loader ts-node/esm src/fastify-main.ts",
     "lint": "eslint . --ext .ts,.tsx"
   }
 }
