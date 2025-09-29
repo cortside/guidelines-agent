@@ -1,1 +1,32 @@
-[]
+[
+  {
+    "threadId": "thread-1759184753687-6vz19cx2z",
+    "name": "Conversation",
+    "createdAt": "2025-09-29T22:25:53.687Z",
+    "lastActivity": "2025-09-29T22:25:53.687Z",
+    "messageCount": 0
+  },
+  {
+    "threadId": "thread-1759184795915-ths5bfea5",
+    "name": "Test Conversation",
+    "createdAt": "2025-09-29T22:26:35.915Z",
+    "lastActivity": "2025-09-29T22:26:35.915Z",
+    "messageCount": 0
+  },
+  {
+    "threadId": "thread-1759185030005-sevwtdhk2",
+    "name": "Guten Tag",
+    "createdAt": "2025-09-29T22:30:30.005Z",
+    "lastActivity": "2025-09-29T22:30:34.240Z",
+    "messageCount": 1,
+    "firstMessage": "guten tag"
+  },
+  {
+    "threadId": "thread-1759185577852-mkv8me7oa",
+    "name": "Hello Coding Guidelines",
+    "createdAt": "2025-09-29T22:39:37.852Z",
+    "lastActivity": "2025-09-29T22:40:04.990Z",
+    "messageCount": 2,
+    "firstMessage": "Hello, what are the coding guidelines?"
+  }
+]

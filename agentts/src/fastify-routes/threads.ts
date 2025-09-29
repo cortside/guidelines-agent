@@ -10,6 +10,7 @@ import {
   ErrorResponseSchema,
   SuccessResponseSchema
 } from '../schemas/threads.js';
+import { ResponseFormatter } from '../utils/responseFormatter.js';
 
 /**
  * Fastify Thread Management Routes Plugin
@@ -39,11 +40,10 @@ const threadRoutes: FastifyPluginAsyncTypebox = async function (fastify) {
       return stats;
     } catch (error) {
       fastify.log.error(error);
-      return reply.status(500).send({
-        error: 'Internal server error retrieving thread statistics',
-        code: 'INTERNAL_ERROR',
-        timestamp: new Date().toISOString()
-      });
+      return ResponseFormatter.internalError(
+        'retrieving thread statistics',
+        error as Error
+      );
     }
   });
 
@@ -66,13 +66,14 @@ const threadRoutes: FastifyPluginAsyncTypebox = async function (fastify) {
       const threadManagementService = fastify.threadService;
       const threadsData = threadManagementService.getAllThreads();
       
-      // Transform the data to match our TypeBox schema
+      // Transform the data to match the schema
       const threads = threadsData.map((thread: any) => ({
-        id: thread.threadId,
+        threadId: thread.threadId,
         name: thread.name,
         createdAt: thread.createdAt.toISOString(),
-        updatedAt: thread.lastActivity.toISOString(),
-        messageCount: thread.messageCount
+        updatedAt: thread.lastActivity.toISOString(),  // Schema expects updatedAt
+        messageCount: thread.messageCount,
+        metadata: thread.metadata
       }));
 
       return {
@@ -81,11 +82,10 @@ const threadRoutes: FastifyPluginAsyncTypebox = async function (fastify) {
       };
     } catch (error) {
       fastify.log.error(error);
-      return reply.status(500).send({
-        error: 'Internal server error retrieving threads',
-        code: 'INTERNAL_ERROR',
-        timestamp: new Date().toISOString()
-      });
+      return ResponseFormatter.internalError(
+        'retrieving threads',
+        error as Error
+      );
     }
   });
 
@@ -110,28 +110,32 @@ const threadRoutes: FastifyPluginAsyncTypebox = async function (fastify) {
       const threadManagementService = fastify.threadService;
       
       // Generate new thread ID
-      const threadId = `thread-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const threadId = `thread-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
       
       // Create thread metadata
       threadManagementService.createThreadMetadata(threadId, name);
       
       const now = new Date().toISOString();
       
-      return reply.status(201).send({
-        id: threadId,
+      const response: any = {
+        threadId: threadId,
         name,
         createdAt: now,
         updatedAt: now,
-        messageCount: 0,
-        metadata
-      });
+        messageCount: 0
+      };
+      
+      if (metadata !== undefined) {
+        response.metadata = metadata;
+      }
+      
+      return reply.status(201).send(response);
     } catch (error) {
       fastify.log.error(error);
-      return reply.status(500).send({
-        error: 'Internal server error creating thread',
-        code: 'INTERNAL_ERROR',
-        timestamp: new Date().toISOString()
-      });
+      return ResponseFormatter.internalError(
+        'creating thread',
+        error as Error
+      );
     }
   });
 
@@ -178,11 +182,7 @@ const threadRoutes: FastifyPluginAsyncTypebox = async function (fastify) {
       const success = threadManagementService.updateThreadName(threadId, name);
       
       if (!success) {
-        return reply.status(404).send({
-          error: 'Thread not found',
-          code: 'THREAD_NOT_FOUND',
-          timestamp: new Date().toISOString()
-        });
+        return ResponseFormatter.notFoundError('Thread', threadId);
       }
 
       // Get updated thread data
@@ -190,15 +190,11 @@ const threadRoutes: FastifyPluginAsyncTypebox = async function (fastify) {
       const updatedThread = threads.find((t: any) => t.threadId === threadId);
       
       if (!updatedThread) {
-        return reply.status(404).send({
-          error: 'Thread not found after update',
-          code: 'THREAD_NOT_FOUND',
-          timestamp: new Date().toISOString()
-        });
+        return ResponseFormatter.notFoundError('Thread', threadId);
       }
 
       return {
-        id: updatedThread.threadId,
+        threadId: updatedThread.threadId,
         name: updatedThread.name,
         createdAt: updatedThread.createdAt.toISOString(),
         updatedAt: updatedThread.lastActivity.toISOString(),
@@ -207,11 +203,10 @@ const threadRoutes: FastifyPluginAsyncTypebox = async function (fastify) {
       };
     } catch (error) {
       fastify.log.error(error);
-      return reply.status(500).send({
-        error: 'Internal server error updating thread',
-        code: 'INTERNAL_ERROR',
-        timestamp: new Date().toISOString()
-      });
+      return ResponseFormatter.internalError(
+        'updating thread',
+        error as Error
+      );
     }
   });
 
@@ -248,11 +243,7 @@ const threadRoutes: FastifyPluginAsyncTypebox = async function (fastify) {
       const success = threadManagementService.deleteThread(threadId);
       
       if (!success) {
-        return reply.status(404).send({
-          error: 'Thread not found',
-          code: 'THREAD_NOT_FOUND',
-          timestamp: new Date().toISOString()
-        });
+        return ResponseFormatter.notFoundError('Thread', threadId);
       }
 
       return {
@@ -262,11 +253,10 @@ const threadRoutes: FastifyPluginAsyncTypebox = async function (fastify) {
       };
     } catch (error) {
       fastify.log.error(error);
-      return reply.status(500).send({
-        error: 'Internal server error deleting thread',
-        code: 'INTERNAL_ERROR',
-        timestamp: new Date().toISOString()
-      });
+      return ResponseFormatter.internalError(
+        'deleting thread',
+        error as Error
+      );
     }
   });
 };

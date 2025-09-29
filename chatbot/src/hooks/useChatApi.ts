@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { sendMessage, getThread } from '../lib/api';
 import { Message } from '../types/message';
 import { isBlank } from '../utils/isBlank';
@@ -10,22 +10,65 @@ export function useChatApi(conversationId: string, onMessageComplete?: () => voi
   const [loading, setLoading] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const loadingRef = useRef(false);
 
   // Load thread history when conversationId changes
   const loadThreadHistory = useCallback(async (threadId: string) => {
     if (!threadId) return;
     
+    // Prevent duplicate calls
+    if (loadingRef.current) {
+      console.log('useChatApi: History load already in progress, skipping');
+      return;
+    }
+    
+    loadingRef.current = true;
     setLoadingHistory(true);
     setError(null);
+    
+    console.log('useChatApi: Loading thread history for:', threadId);
     
     try {
       const threadData = await getThread(threadId);
       
       // Convert thread messages to our Message format
       const threadMessages: Message[] = threadData.messages
-        .filter(msg => msg.type === 'human' || msg.type === 'ai')
+        // Filter out system messages and tool calls that are not part of the user conversation
+        .filter(msg => {
+          // Keep all user messages
+          if (msg.role === 'user') return true;
+          
+          if (msg.role === 'assistant') {
+            // Filter out system instructions
+            if (msg.content.includes('You are an assistant for question-answering tasks') ||
+                msg.content.includes('Use the provided context to answer user questions') ||
+                msg.content.startsWith('You are ')) {
+              return false;
+            }
+            
+            // Filter out tool calls (retrieve tool invocations)
+            if (msg.content.startsWith('retrieve: {') || 
+                /^[a-zA-Z_]+:\s*\{/.test(msg.content)) {
+              return false;
+            }
+            
+            // Filter out raw tool responses (source documents)
+            if (msg.content.startsWith('Source: ') && 
+                msg.content.includes('Tags: ') && 
+                msg.content.includes('Content: ')) {
+              return false;
+            }
+            
+            // Keep actual assistant responses to users
+            return true;
+          }
+          
+          return false;
+        })
+        // Sort by timestamp to ensure correct chronological order
+        .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
         .map(msg => ({
-          role: msg.type === 'human' ? 'user' as const : 'assistant' as const,
+          role: msg.role,
           content: msg.content
         }));
       
@@ -36,6 +79,7 @@ export function useChatApi(conversationId: string, onMessageComplete?: () => voi
       setMessages([]);
     } finally {
       setLoadingHistory(false);
+      loadingRef.current = false;
     }
   }, []);
 
@@ -46,7 +90,7 @@ export function useChatApi(conversationId: string, onMessageComplete?: () => voi
     } else {
       setMessages([]);
     }
-  }, [conversationId, loadThreadHistory]);
+  }, [conversationId]); // Removed loadThreadHistory from dependencies to prevent double calls
 
   const send = async (input: string) => {
     if (isBlank(input)) return;

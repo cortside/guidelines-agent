@@ -123,48 +123,43 @@ export function Sidebar({
           ) : (
             <ul className="space-y-1">
               {threads.map((thread: Conversation) => (
-                <li key={thread.id}>
+                <li key={thread.threadId}>
                   <div
                     className={`relative w-full text-left px-3 py-2 rounded-md group hover:bg-gray-200 transition-colors duration-200 ${
-                      selected === thread.id 
+                      selected === thread.threadId 
                         ? 'bg-blue-200 text-blue-900' 
                         : 'text-gray-700'
                     }`}
                   >
                     <button
                       className="w-full text-left focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded"
-                      onClick={() => onSelect(thread.id)}
-                      onKeyDown={(e) => handleKeyDown(e, thread.id)}
-                      aria-pressed={selected === thread.id}
+                      onClick={() => onSelect(thread.threadId)}
+                      onKeyDown={(e) => handleKeyDown(e, thread.threadId)}
+                      aria-pressed={selected === thread.threadId}
                     >
                       <div className="flex items-start justify-between pr-8">
                         <div className="flex-1 min-w-0">
                           <div className="font-medium text-sm truncate">
-                            {thread.name}
+                            {thread.name || 'Untitled Conversation'}
                           </div>
-                          {thread.lastMessage && (
-                            <div className="text-xs text-gray-600 truncate mt-1">
-                              {thread.lastMessage}
-                            </div>
-                          )}
                           <div className="text-xs text-gray-500 mt-1">
-                            {formatLastActivity(thread.lastActivity)} • {thread.messageCount} msgs
+                            {formatLastActivity(thread.updatedAt)} • {thread.messageCount} msgs
                           </div>
                         </div>
                       </div>
                     </button>
                     <button
-                      onClick={(e) => handleDeleteThread(thread.id, e)}
+                      onClick={(e) => handleDeleteThread(thread.threadId, e)}
                       className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-700 text-xs p-1 focus:outline-none focus:ring-1 focus:ring-red-300 rounded focus:opacity-100"
                       title="Delete conversation"
-                      aria-label={`Delete conversation ${thread.name}`}
+                      aria-label={`Delete conversation ${thread.name || 'Untitled Conversation'}`}
                     >
                       ×
                     </button>
                   </div>
-                  {selected === thread.id && (
+                  {selected === thread.threadId && (
                     <div className="sr-only" aria-live="polite">
-                      Currently selected conversation: {thread.name}
+                      Currently selected conversation: {thread.name || 'Untitled Conversation'}
                     </div>
                   )}
                 </li>

@@ -16,10 +16,10 @@ export const CreateThreadRequestSchema = Type.Object({
 });
 
 /**
- * Thread response schema
+ * Thread response schema (used by both individual and collection endpoints)
  */
 export const ThreadSchema = Type.Object({
-  id: Type.String({
+  threadId: Type.String({
     description: 'Unique thread identifier',
     examples: ['thread-abc123']
   }),
@@ -34,7 +34,7 @@ export const ThreadSchema = Type.Object({
   }),
   updatedAt: Type.String({
     format: 'date-time',
-    description: 'When the thread was last updated',
+    description: 'When the thread was last active',
     examples: ['2025-09-29T12:30:00.000Z']
   }),
   messageCount: Type.Number({

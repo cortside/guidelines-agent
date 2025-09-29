@@ -46,23 +46,23 @@ export function useConversations() {
       // Convert API response to local format and sort intelligently
       const conversations: Conversation[] = threads
         .map(thread => ({
-          id: thread.threadId,
+          threadId: thread.threadId,
           name: thread.name,
-          lastMessage: thread.lastMessage,
-          lastActivity: new Date(thread.lastActivity),
-          messageCount: thread.messageCount,
           createdAt: new Date(thread.createdAt),
+          updatedAt: new Date(thread.updatedAt),
+          messageCount: thread.messageCount,
+          metadata: thread.metadata,
         }))
         .sort((a, b) => {
-          // Check if all lastActivity dates are very close (within 1 minute)
+          // Check if all updatedAt dates are very close (within 1 minute)
           // This would indicate they're just current timestamps from server restarts
-          const timeDiff = Math.abs(a.lastActivity.getTime() - b.lastActivity.getTime());
+          const timeDiff = Math.abs(a.updatedAt.getTime() - b.updatedAt.getTime());
           if (timeDiff < 60000) { // Less than 1 minute difference
             // Fall back to sorting by createdAt (most recent first)
             return b.createdAt.getTime() - a.createdAt.getTime();
           } else {
-            // Sort by lastActivity (most recent first)
-            return b.lastActivity.getTime() - a.lastActivity.getTime();
+            // Sort by updatedAt (most recent first)
+            return b.updatedAt.getTime() - a.updatedAt.getTime();
           }
         });
 
@@ -113,12 +113,12 @@ export function useConversations() {
       console.log('useConversations: Thread created with ID:', result.threadId);
       // Don't reload all threads, just add the new thread to the list
       const newThread = {
-        id: result.threadId,
+        threadId: result.threadId,
         name: name || 'New Conversation',
-        lastMessage: '',
-        lastActivity: new Date(),
-        messageCount: 0,
         createdAt: new Date(),
+        updatedAt: new Date(),
+        messageCount: 0,
+        metadata: undefined,
       };
       
       setState(prev => ({
@@ -152,7 +152,7 @@ export function useConversations() {
       // Remove thread from local state instead of reloading all
       setState(prev => ({
         ...prev,
-        threads: prev.threads.filter(thread => thread.id !== threadId),
+        threads: prev.threads.filter(thread => thread.threadId !== threadId),
         // Clear currentThreadId if it was the deleted thread
         currentThreadId: prev.currentThreadId === threadId ? null : prev.currentThreadId,
       }));
@@ -177,7 +177,7 @@ export function useConversations() {
       setState(prev => ({
         ...prev,
         threads: prev.threads.map(thread => 
-          thread.id === threadId ? { ...thread, name: newName } : thread
+          thread.threadId === threadId ? { ...thread, name: newName } : thread
         ),
       }));
       

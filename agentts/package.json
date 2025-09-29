@@ -35,16 +35,23 @@
     "@types/yamljs": "^0.2.34",
     "eslint": "^8.56.0",
     "ts-node": "^10.9.2",
+    "tsx": "^4.20.6",
     "typescript": "^5.6.3"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc -p tsconfig.build.json",
     "start": "node dist/src/fastify-main.js",
     "start:express": "node dist/main-new.js",
     "start:fastify": "node dist/src/fastify-main.js",
     "dev": "node --loader ts-node/esm src/fastify-main.ts",
     "dev:express": "node --loader ts-node/esm main-new.ts",
     "dev:fastify": "node --loader ts-node/esm src/fastify-main.ts",
-    "lint": "eslint . --ext .ts,.tsx"
+    "lint": "eslint . --ext .ts,.tsx",
+    "test": "npx tsx --test tests/**/*.test.ts",
+    "test:unit": "npx tsx --test tests/unit/**/*.test.ts", 
+    "test:integration": "npx tsx --test tests/integration/**/*.test.ts",
+    "test:performance": "npx tsx --test tests/performance/**/*.test.ts",
+    "test:watch": "npx tsx --test --watch tests/**/*.test.ts",
+    "test:coverage": "npx tsx --test --experimental-test-coverage tests/**/*.test.ts"
   }
 }

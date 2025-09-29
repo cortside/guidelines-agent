@@ -1,6 +1,42 @@
 # Component Documentation
 
-This document outlines the component boundaries, responsibilities, and usage patterns for the Chatbot UI.
+This document outlines the component boundaries, responsibilities, and usage patterns for the Chatbot UI and API system.
+
+## API Architecture Overview ✨ **FASTIFY + TYPEBOX**
+
+### Backend Components (agentts/)
+
+#### Fastify Server (`src/fastify-main.ts`) ✅ **PRIMARY SERVER**
+**Responsibility**: Production-ready Fastify server with TypeBox validation and auto-generated OpenAPI documentation.
+
+**Key Features**:
+- **TypeBox Integration**: Automatic request/response validation with TypeScript compile-time safety
+- **OpenAPI Generation**: Auto-generated API documentation available at `/api-docs`
+- **Performance Optimization**: Fastify's superior request handling and reduced memory footprint
+- **Error Handling**: Comprehensive error management with consistent response format
+
+#### Schema System (`src/schemas/`) ✅ **TYPE SAFETY**
+**Responsibility**: TypeScript-first API contract definitions providing end-to-end type safety.
+
+**Schema Files**:
+- `chat.ts` - Chat request/response validation with business rules
+- `threads.ts` - Thread management CRUD operations with metadata validation
+- `health.ts` - System monitoring and health check response schemas
+- `common.ts` - Shared error response and success response schemas
+- `index.ts` - Centralized schema exports and TypeScript type definitions
+
+**Key Features**:
+- **Compile-Time Safety**: TypeScript integration prevents API contract violations
+- **Runtime Validation**: Automatic request/response validation with detailed error messages
+- **Self-Documenting**: Schema descriptions generate comprehensive OpenAPI documentation
+
+#### Route Modules (`src/fastify-routes/`) ✅ **MODULAR DESIGN**
+**Responsibility**: Modular Fastify plugins providing clean separation of API concerns.
+
+**Route Files**:
+- `health.ts` - System health monitoring endpoints with service dependency checks
+- `chat.ts` - AI conversation processing with thread context and validation
+- `threads.ts` - Thread management CRUD operations with comprehensive metadata support
 
 ## Component Architecture
 

@@ -4,25 +4,24 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8002';
 
 export interface ThreadSummary {
   threadId: string;
-  name: string;
-  lastMessage?: string;
-  lastActivity: Date;
+  name?: string;
+  createdAt: string;  // ISO date string from API
+  updatedAt: string;  // ISO date string from API
   messageCount: number;
-  createdAt: Date;
+  metadata?: Record<string, any>;
 }
 
 export interface ThreadMessage {
   id: string;
-  type: 'human' | 'ai' | 'system' | 'tool';
+  role: 'user' | 'assistant';
   content: string;
+  timestamp: string;
 }
 
 export interface ThreadResponse {
   threadId: string;
-  name: string;
   messages: ThreadMessage[];
-  createdAt: Date;
-  lastActivity: Date;
+  totalMessages: number;
 }
 
 export async function sendMessage(threadId: string, message: string) {

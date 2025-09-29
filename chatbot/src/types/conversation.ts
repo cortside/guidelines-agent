@@ -1,10 +1,10 @@
 export interface Conversation {
-  id: string;
-  name: string;
-  lastMessage?: string;
-  lastActivity: Date;
-  messageCount: number;
+  threadId: string;
+  name?: string;
   createdAt: Date;
+  updatedAt: Date;
+  messageCount: number;
+  metadata?: Record<string, any>;
 }
 
 export interface ConversationState {

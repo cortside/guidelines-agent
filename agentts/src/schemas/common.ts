@@ -15,7 +15,20 @@ export const ErrorResponseSchema = Type.Object({
     format: 'date-time', 
     description: 'ISO timestamp of when the error occurred',
     examples: ['2025-09-29T12:00:00.000Z']
-  })
+  }),
+  // Development-only fields
+  stack: Type.Optional(Type.String({ 
+    description: 'Stack trace (only included in development mode)' 
+  })),
+  details: Type.Optional(Type.Object({
+    url: Type.String({ description: 'Request URL that caused the error' }),
+    method: Type.String({ description: 'HTTP method used' }),
+    params: Type.Optional(Type.Record(Type.String(), Type.Any())),
+    query: Type.Optional(Type.Record(Type.String(), Type.Any()))
+  }, {
+    description: 'Additional error context (only included in development mode)',
+    additionalProperties: true
+  }))
 });
 
 /**

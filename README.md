@@ -4,8 +4,8 @@
 This repository provides an agent and chatbot system for answering questions about REST API and architecture guidelines. It retrieves and summarizes content from markdown documents hosted on GitHub, using LangChain, LangGraph, and OpenAI models for retrieval, grading, rewriting, and answering user queries.
 
 ### Main Components
-- **agent/**: Python 3.11 FastAPI agent that connects to an MCP server over HTTP. Handles document loading, semantic search, and workflow orchestration for question answering. See [agent/README.md](agent/README.md) for setup and usage.
-- **chatbot/**: React 19 + TypeScript chat UI for interacting with the agent. See [chatbot/README.md](chatbot/README.md) for setup and usage.
+- **agentts/**: **Fastify + TypeBox** TypeScript API that wraps a LangGraph agent. Provides enterprise-grade type safety, performance, and auto-generated OpenAPI documentation. See [agentts/README.md](agentts/README.md) for setup and usage.
+- **chatbot/**: React 19 + TypeScript chat UI for interacting with the agent API. Features multi-thread conversation support and responsive design. See [chatbot/README.md](chatbot/README.md) for setup and usage.
 
 ## Features
 - Loads and processes markdown guidelines from GitHub
@@ -17,9 +17,9 @@ This repository provides an agent and chatbot system for answering questions abo
 - Infrastructure via Docker Compose and Kubernetes manifests
 
 ## Requirements
-- Python 3.8+ (agent)
-- Node.js 18+ (chatbot)
-- See `agent/requirements.txt` and `chatbot/package.json` for dependencies
+- Node.js 18+ (TypeScript API and chatbot)
+- See `agentts/package.json` and `chatbot/package.json` for dependencies
+- TypeScript 5.6+ for development
 
 ## Documentation
 - Architecture, conventions, and recipes: see [docs/](docs/)
@@ -27,8 +27,30 @@ This repository provides an agent and chatbot system for answering questions abo
 - Copilot instructions: see [docs/copilot-instructions-guidelines.md](docs/copilot-instructions-guidelines.md)
 
 ## Getting Started
-- See [agent/README.md](agent/README.md) for agent setup and running instructions
-- See [chatbot/README.md](chatbot/README.md) for chatbot setup and running instructions
+
+### Quick Start (Fastify API)
+```bash
+cd agentts/
+npm install
+npm run build
+npm start          # Production Fastify server  
+# OR
+npm run dev        # Development mode with tsx
+```
+
+### Interactive API Documentation
+- Visit `http://localhost:8002/api-docs` for complete Swagger UI documentation
+- OpenAPI 3.0.3 specification auto-generated from TypeBox schemas
+
+### Testing
+```bash
+cd agentts/
+npm test           # Run comprehensive TypeScript test suite
+```
+
+For detailed setup instructions:
+- See [agentts/README.md](agentts/README.md) for API setup and development  
+- See [chatbot/README.md](chatbot/README.md) for UI setup and usage
 
 ## License
 MIT

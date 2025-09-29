@@ -163,10 +163,23 @@ const healthRoutes: FastifyPluginAsyncTypebox = async function (fastify) {
     
     if (!isReady) {
       reply.code(503);
+      return {
+        error: 'Service not ready - dependencies unavailable',
+        code: 'SERVICE_NOT_READY',
+        timestamp: new Date().toISOString(),
+        details: {
+          url: request.url,
+          method: request.method,
+          dependencies: {
+            chatService: chatServiceReady,
+            vectorStore: vectorStoreReady
+          }
+        }
+      };
     }
     
     return {
-      status: isReady ? 'ready' : 'not-ready',
+      status: 'ready',
       timestamp: new Date().toISOString(),
       dependencies: {
         chatService: chatServiceReady,

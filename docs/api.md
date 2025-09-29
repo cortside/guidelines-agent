@@ -1,15 +1,33 @@
 # API Module Documentation (`agentts/`)
 
 ## Purpose
-The `agentts/` directory implements the backend API that wraps a LangGraph agent. It is responsible for document ingestion, prompt management, workflow orchestration, thread management, and serving as the backend for the chatbot UI.
+The `agentts/` directory implements a **Fastify + TypeBox** backend API that wraps a LangGraph agent. It provides enterprise-grade type safety, performance, and documentation with automatic OpenAPI generation. The API is responsible for document ingestion, prompt management, workflow orchestration, thread management, and serving as the backend for the chatbot UI.
 
-## Main Components
+## Architecture Overview ✨ **MIGRATED TO FASTIFY**
 
-- **main.ts**: Entry point for the API server. Initializes and starts the API, sets up routes/endpoints, and connects to the agent logic.
-- **DocumentLoader.ts**: Contains logic for loading, parsing, and preparing documents for use by the agent. Handles supported file types and may include preprocessing steps.
-- **PromptTemplates.ts**: Manages prompt templates, including loading, storing, and updating templates used by the agent for various tasks.
-- **Workflow.ts**: Defines the workflow logic for the agent, including task orchestration, state management, and integration with LangGraph.
-- **db/chroma.sqlite3**: Local SQLite database for storing embeddings, metadata, or other persistent data required by the agent.
+### **Primary Server Implementation** ✅ **PRODUCTION READY**
+- **src/fastify-main.ts**: **PRIMARY** Fastify server with TypeBox validation and auto-generated OpenAPI documentation
+- **Backup Server**: `main-new.ts` - Express implementation maintained for rollback compatibility
+
+### **TypeBox Schema System** ✅ **NEW**
+- **src/schemas/**: Complete TypeScript-first schema definitions
+  - `chat.ts` - Chat request/response schemas with validation rules
+  - `threads.ts` - Thread management schemas for CRUD operations
+  - `health.ts` - Health monitoring and system status schemas  
+  - `common.ts` - Shared error response and success schemas
+  - `index.ts` - Centralized schema exports and type definitions
+
+### **Fastify Route Modules** ✅ **PRODUCTION READY**
+- **src/fastify-routes/health.ts**: Health monitoring endpoints with TypeBox validation
+- **src/fastify-routes/chat.ts**: AI conversation endpoints with automatic request/response validation
+- **src/fastify-routes/threads.ts**: Thread management CRUD operations with TypeBox schemas
+
+### **Legacy Components** (Maintained for Rollback)
+- **main-new.ts**: Express modular server (backup during migration)
+- **DocumentLoader.ts**: Document processing component (compatible with both servers)
+- **PromptTemplates.ts**: Template management (compatible with both servers)
+- **Workflow.ts**: LangGraph workflow orchestration (compatible with both servers)
+- **db/chroma.sqlite3**: SQLite database for embeddings and metadata (unchanged)
 
 ## Modular Architecture (Updated September 2025)
 
@@ -33,20 +51,43 @@ The API has been fully refactored into a modular, enterprise-ready architecture:
 - **Error Handling**: Comprehensive error management middleware
 - **Validation**: Input validation and sanitization middleware
 
-### API Endpoints
+### API Endpoints ✨ **FASTIFY + TYPEBOX**
+
+All endpoints now feature automatic TypeBox validation, enhanced error handling, and auto-generated OpenAPI 3.0.3 documentation available at `/api-docs`.
 
 #### Chat Operations
-- `POST /chat` - Send message to agent with thread support
-- `GET /threads/{threadId}` - Retrieve conversation history
+- `POST /chat` - Process AI messages with thread context and TypeBox validation
+  - **Request**: `{ threadId: string, message: string }`
+  - **Response**: `{ answer: string, threadId: string, messageId: string, timestamp: string }`
+  - **Validation**: Thread ID format, message length constraints, content safety
+- `GET /threads/{threadId}` - Retrieve conversation history with enhanced metadata
+  - **Response**: Thread data with message array and complete metadata
 
-#### Thread Management ✨ **NEW**
-- `GET /threads` - List all conversation threads with metadata
-- `POST /threads` - Create new conversation thread
-- `PUT /threads/{threadId}` - Update thread metadata (name, etc.)
-- `DELETE /threads/{threadId}` - Delete conversation thread
+#### Thread Management ✨ **ENHANCED**
+- `GET /threads` - List all conversation threads with pagination and sorting
+  - **Query Parameters**: `limit`, `offset`, `sortBy`, `sortOrder`
+  - **Response**: Array of threads with metadata and activity timestamps
+- `POST /threads` - Create new conversation thread with validation
+  - **Request**: `{ name?: string, metadata?: object }`
+  - **Response**: Created thread with generated ID and timestamps
+- `PATCH /threads/{threadId}` - Update thread properties with validation
+  - **Request**: `{ name?: string, metadata?: object }`
+  - **Response**: Updated thread data
+- `DELETE /threads/{threadId}` - Delete thread with proper cleanup
+  - **Response**: `{ success: true, deletedThreadId: string }`
+- `GET /threads/stats` - Thread analytics and storage debugging
 
-#### System Operations
-- `GET /health` - Health check and system status
+#### System Operations ✨ **ENHANCED** 
+- `GET /health` - Comprehensive system status with service health checks
+  - **Response**: System status, version info, service health, timestamps
+- `GET /health/live` - Kubernetes liveness probe (lightweight)
+  - **Response**: `{ status: "alive", timestamp: string }`
+- `GET /health/ready` - Kubernetes readiness probe with dependency validation
+  - **Response**: Service availability status with detailed dependency checks
+
+#### Documentation
+- `GET /api-docs` - **NEW**: Interactive Swagger UI with complete API documentation
+- **OpenAPI Specification**: Auto-generated from TypeBox schemas at `/api-docs/json`
 
 ## Key Features
 
@@ -71,33 +112,70 @@ The API has been fully refactored into a modular, enterprise-ready architecture:
 - **Workflow Orchestration**: Managing the sequence of operations and state transitions within the agent.
 - **Thread Management**: Multi-conversation support with persistent state and metadata tracking.
 
-## Recent Improvements ✅ **COMPLETED**
+## Recent Improvements ✅ **FASTIFY MIGRATION COMPLETED**
 
+### ✅ **Express → Fastify Migration** (September 2025)
+- ✅ **TypeBox Integration**: Complete TypeScript-first schema system with compile-time safety
+- ✅ **Automatic OpenAPI Generation**: Self-documenting API with interactive Swagger UI
+- ✅ **Enhanced Performance**: Fastify's superior request handling and reduced memory footprint  
+- ✅ **Comprehensive Testing**: Node.js native test runner with fastify.inject() integration
+- ✅ **Production-Ready Server**: Full migration completed with rollback capability maintained
+
+### ✅ **Architecture Enhancements**
 - ✅ **Modular Architecture**: Complete separation of concerns with service/controller layers
 - ✅ **Thread Management**: Full multi-conversation support with persistent history
-- ✅ **API Documentation**: Comprehensive OpenAPI/Swagger specification
-- ✅ **Error Handling**: Enterprise-grade error management and logging
-- ✅ **Configuration**: Environment-based configuration management
-- ✅ **Type Safety**: Complete TypeScript coverage with proper interfaces
-- ✅ **Testing Ready**: Architecture supports comprehensive unit and integration testing
+- ✅ **TypeBox Validation**: Automatic request/response validation with business logic rules
+- ✅ **Error Handling**: Enterprise-grade error management with consistent response format
+- ✅ **Configuration**: Environment-based configuration management (unchanged for compatibility)
+- ✅ **Type Safety**: End-to-end TypeScript coverage from HTTP requests to database responses
+- ✅ **Testing Framework**: Comprehensive TypeScript test suite with performance benchmarking
 
 ## Configuration
 
-The API supports extensive configuration through environment variables:
+The Fastify API maintains full backward compatibility with all existing environment variables:
 
 ```env
-# Server Configuration
+# Server Configuration (Unchanged)
 PORT=8002
 HOST=localhost
 NODE_ENV=development
 
-# LLM Configuration
+# LLM Configuration (Unchanged)
 LLM_MODEL=gpt-4
 LLM_API_KEY=your-api-key
 LLM_TEMPERATURE=0.7
 
-# Vector Store Configuration
+# Vector Store Configuration (Unchanged)
 VECTOR_STORE_PATH=./db/chroma.sqlite3
+```
+
+### Server Startup Scripts
+
+**Production (Fastify)**:
+```bash
+npm start           # Fastify server (default)
+npm run build       # TypeScript compilation excluding tests
+```
+
+**Development (Fastify)**:
+```bash
+npm run dev         # Fastify dev server with tsx (default)
+npm test           # TypeScript test suite with Node.js native runner
+```
+
+**Rollback (Express)**:
+```bash
+npm run start:express  # Express server (backup)
+npm run dev:express    # Express dev server (backup)
+```
+
+### Testing Commands
+```bash
+npm test                # All TypeScript tests with tsx
+npm run test:unit       # Unit tests only  
+npm run test:integration # Integration workflow tests
+npm run test:performance # Performance benchmarks
+```
 EMBEDDING_MODEL=text-embedding-3-small
 
 # Document Processing

@@ -5,6 +5,7 @@ import {
   ThreadHistoryResponseSchema,
   ErrorResponseSchema 
 } from '../schemas/chat.js';
+import { ResponseFormatter } from '../utils/responseFormatter.js';
 
 /**
  * Fastify Chat Routes Plugin
@@ -35,11 +36,10 @@ const chatRoutes: FastifyPluginAsyncTypebox = async function (fastify) {
       // Input validation is handled by TypeBox schemas automatically
       // Additional business logic validation if needed
       if (!threadId.trim() || !message.trim()) {
-        return reply.status(400).send({
-          error: 'threadId and message cannot be empty',
-          code: 'VALIDATION_ERROR',
-          timestamp: new Date().toISOString()
-        });
+        return ResponseFormatter.createErrorResponse(
+          'threadId and message cannot be empty',
+          'VALIDATION_ERROR'
+        );
       }
 
       const chatService = fastify.chatService;
@@ -52,11 +52,10 @@ const chatRoutes: FastifyPluginAsyncTypebox = async function (fastify) {
       };
     } catch (error) {
       fastify.log.error(error);
-      return reply.status(500).send({
-        error: 'Internal server error processing chat message',
-        code: 'INTERNAL_ERROR',
-        timestamp: new Date().toISOString()
-      });
+      return ResponseFormatter.internalError(
+        'processing chat message',
+        error as Error
+      );
     }
   });
 
@@ -94,22 +93,14 @@ const chatRoutes: FastifyPluginAsyncTypebox = async function (fastify) {
 
       // Additional validation for empty threadId
       if (!threadId.trim()) {
-        return reply.status(400).send({
-          error: 'threadId cannot be empty',
-          code: 'VALIDATION_ERROR',
-          timestamp: new Date().toISOString()
-        });
+        return ResponseFormatter.validationError('threadId', 'cannot be empty');
       }
 
       const chatService = fastify.chatService;
       const rawMessages = await chatService.getThreadHistory(threadId);
       
       if (!rawMessages || rawMessages.length === 0) {
-        return reply.status(404).send({
-          error: 'Thread not found',
-          code: 'THREAD_NOT_FOUND',
-          timestamp: new Date().toISOString()
-        });
+        return reply.status(404).send(ResponseFormatter.notFoundError('Thread', threadId));
       }
 
       // Transform messages to match our TypeBox schema
@@ -127,11 +118,10 @@ const chatRoutes: FastifyPluginAsyncTypebox = async function (fastify) {
       };
     } catch (error) {
       fastify.log.error(error);
-      return reply.status(500).send({
-        error: 'Internal server error retrieving thread history',
-        code: 'INTERNAL_ERROR',
-        timestamp: new Date().toISOString()
-      });
+      return ResponseFormatter.internalError(
+        'retrieving thread history',
+        error as Error
+      );
     }
   });
 };

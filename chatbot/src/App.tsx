@@ -42,9 +42,9 @@ export default function App() {
     await removeThread(threadId);
     // If deleted thread was current, select the first available thread
     if (currentThreadId === threadId && threads.length > 1) {
-      const remainingThreads = threads.filter(t => t.id !== threadId);
+      const remainingThreads = threads.filter(t => t.threadId !== threadId);
       if (remainingThreads.length > 0) {
-        setCurrentThread(remainingThreads[0].id);
+        setCurrentThread(remainingThreads[0].threadId);
       }
     }
   };
@@ -65,7 +65,7 @@ export default function App() {
         currentThreadId, 
         attempted: initializationAttempted.current,
         threadsLoaded,
-        threadIds: threads.map(t => t.id)
+        threadIds: threads.map(t => t.threadId)
       });
       
       // Don't run initialization multiple times - this is the key protection
@@ -94,8 +94,8 @@ export default function App() {
       
       if (threads.length > 0) {
         // Select the most recent thread (first in the sorted list)
-        console.log(`[${currentTime}] Found ${threads.length} existing threads - selecting most recent:`, threads[0].id);
-        setCurrentThread(threads[0].id);
+        console.log(`[${currentTime}] Found ${threads.length} existing threads - selecting most recent:`, threads[0].threadId);
+        setCurrentThread(threads[0].threadId);
         setInitializing(false);
       } else {
         // Only create a new thread if no threads exist after loading is complete

@@ -2,6 +2,8 @@ import Fastify from 'fastify';
 import { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
 import { config } from './config/index.js';
 import { ChatService } from './services/chatService.js';
+import { fastifyErrorHandler } from './fastify-plugins/errorHandler.js';
+import validationPlugin from './fastify-plugins/validation.js';
 
 const fastify = Fastify({ 
   logger: {
@@ -25,6 +27,12 @@ async function startServer() {
     // Decorate fastify instance with services for easy access in routes
     fastify.decorate('chatService', chatService);
     fastify.decorate('threadService', chatService.getThreadManagementService());
+    
+    // Register error handler
+    fastify.setErrorHandler(fastifyErrorHandler);
+    
+    // Register validation plugin
+    await fastify.register(validationPlugin);
     
     // Register plugins
     await fastify.register(import('@fastify/cors'), {
