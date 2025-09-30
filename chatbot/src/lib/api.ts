@@ -54,3 +54,130 @@ export async function updateThreadName(threadId: string, name: string): Promise<
 export async function deleteThread(threadId: string): Promise<void> {
   await axios.delete(`${API_URL}/threads/${threadId}`);
 }
+
+// Streaming API Support
+export interface StreamEvent {
+  type: 'start' | 'step' | 'token' | 'complete' | 'error' | 'cancelled';
+  data: any;
+  timestamp: string;
+}
+
+export async function sendMessageStream(
+  threadId: string,
+  message: string,
+  onEvent: (event: StreamEvent) => void,
+  signal?: AbortSignal
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    // Use fetch with SSE for POST requests (EventSource doesn't support POST)
+    fetch(`${API_URL}/chat/stream`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+      },
+      body: JSON.stringify({ threadId, message }),
+      signal,
+    })
+    .then(async (response) => {
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      if (!response.body) {
+        throw new Error('Response body is null');
+      }
+
+      await processStreamResponse(response.body, onEvent, resolve, reject);
+    })
+    .catch((error) => {
+      handleStreamError(error, onEvent, reject);
+    });
+  });
+}
+
+// Helper function to process stream response
+async function processStreamResponse(
+  body: ReadableStream<Uint8Array>,
+  onEvent: (event: StreamEvent) => void,
+  resolve: () => void,
+  reject: (error: Error) => void
+): Promise<void> {
+  const reader = body.getReader();
+  const decoder = new TextDecoder();
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      
+      if (done) {
+        resolve();
+        break;
+      }
+
+      // Process SSE chunk
+      const chunk = decoder.decode(value, { stream: true });
+      processSSEChunk(chunk, onEvent, resolve, reject);
+    }
+  } catch (error) {
+    reader.releaseLock();
+    reject(error instanceof Error ? error : new Error(String(error)));
+  }
+}
+
+// Helper function to process SSE chunks
+function processSSEChunk(
+  chunk: string,
+  onEvent: (event: StreamEvent) => void,
+  resolve: () => void,
+  reject: (error: Error) => void
+): void {
+  const lines = chunk.split('\n');
+
+  for (const line of lines) {
+    if (line.startsWith('data: ')) {
+      try {
+        const eventData = JSON.parse(line.slice(6).trim());
+        const event: StreamEvent = {
+          type: eventData.type || 'token',
+          data: eventData,
+          timestamp: eventData.timestamp || new Date().toISOString()
+        };
+        
+        onEvent(event);
+
+        // Handle stream completion
+        if (event.type === 'complete') {
+          resolve();
+          return;
+        }
+        
+        // Handle stream errors
+        if (event.type === 'error') {
+          reject(new Error(eventData.error || 'Stream error occurred'));
+          return;
+        }
+      } catch (parseError) {
+        console.warn('Failed to parse SSE data:', line, parseError);
+      }
+    }
+  }
+}
+
+// Helper function to handle stream errors
+function handleStreamError(
+  error: unknown,
+  onEvent: (event: StreamEvent) => void,
+  reject: (error: Error) => void
+): void {
+  if (error instanceof Error && error.name === 'AbortError') {
+    // Handle cancellation gracefully
+    onEvent({
+      type: 'cancelled',
+      data: { message: 'Stream cancelled by user' },
+      timestamp: new Date().toISOString()
+    });
+  }
+  reject(error instanceof Error ? error : new Error(String(error)));
+}

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { sendMessage, getThread } from '../lib/api';
-import { Message } from '../types/message';
+import { sendMessage, getThread, sendMessageStream, StreamEvent } from '../lib/api';
+import { Message, StreamingState } from '../types/message';
 import { isBlank } from '../utils/isBlank';
 import { parseChatResponse } from '../utils/parseChatResponse';
 import { getErrorMessage } from '../utils/getErrorMessage';
@@ -10,7 +10,15 @@ export function useChatApi(conversationId: string, onMessageComplete?: () => voi
   const [loading, setLoading] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const [streamingState, setStreamingState] = useState<StreamingState>({
+    isStreaming: false,
+    currentStep: '',
+    accumulatedContent: '',
+    error: undefined,
+    messageId: undefined
+  });
   const loadingRef = useRef(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Load thread history when conversationId changes
   const loadThreadHistory = useCallback(async (threadId: string) => {
@@ -68,8 +76,10 @@ export function useChatApi(conversationId: string, onMessageComplete?: () => voi
         // Sort by timestamp to ensure correct chronological order
         .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
         .map(msg => ({
+          id: msg.id || Date.now().toString() + Math.random().toString(36),
           role: msg.role,
-          content: msg.content
+          content: msg.content,
+          timestamp: msg.timestamp || new Date().toISOString()
         }));
       
       setMessages(threadMessages);
@@ -96,15 +106,26 @@ export function useChatApi(conversationId: string, onMessageComplete?: () => voi
     if (isBlank(input)) return;
     
     setError(null); // Clear previous errors
-    setMessages((msgs) => [...msgs, { role: 'user', content: input }]);
+    
+    // Add user message immediately
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: input,
+      timestamp: new Date().toISOString()
+    };
+    setMessages((msgs) => [...msgs, userMessage]);
     setLoading(true);
     
     try {
       const res = await sendMessage(conversationId, input);
-      setMessages((msgs) => [
-        ...msgs,
-        { role: 'assistant', content: parseChatResponse(res) }
-      ]);
+      const assistantMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: parseChatResponse(res),
+        timestamp: new Date().toISOString()
+      };
+      setMessages((msgs) => [...msgs, assistantMessage]);
       
       // Notify parent component that a message exchange completed successfully
       if (onMessageComplete) {
@@ -115,12 +136,183 @@ export function useChatApi(conversationId: string, onMessageComplete?: () => voi
       setError(errorInstance);
       
       // Still add error message to chat for user visibility
-      setMessages((msgs) => [
-        ...msgs,
-        { role: 'assistant', content: getErrorMessage(error) }
-      ]);
+      const errorMessage: Message = {
+        id: (Date.now() + 2).toString(),
+        role: 'assistant',
+        content: getErrorMessage(error),
+        timestamp: new Date().toISOString(),
+        error: getErrorMessage(error)
+      };
+      setMessages((msgs) => [...msgs, errorMessage]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const sendStreaming = async (input: string) => {
+    if (isBlank(input)) return;
+    
+    setError(null);
+    
+    // Add user message immediately
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: input,
+      timestamp: new Date().toISOString()
+    };
+    setMessages((msgs) => [...msgs, userMessage]);
+    
+    // Create assistant message placeholder for streaming
+    const assistantMessageId = (Date.now() + 1).toString();
+    const assistantMessage: Message = {
+      id: assistantMessageId,
+      role: 'assistant',
+      content: '',
+      timestamp: new Date().toISOString(),
+      isStreaming: true,
+      isComplete: false
+    };
+    setMessages((msgs) => [...msgs, assistantMessage]);
+    
+    // Initialize streaming state
+    setStreamingState({
+      isStreaming: true,
+      currentStep: 'Starting...',
+      accumulatedContent: '',
+      messageId: assistantMessageId
+    });
+    
+    // Create abort controller for this request
+    abortControllerRef.current = new AbortController();
+    
+    const updateMessageStep = (step: string) => {
+      setMessages(msgs => 
+        msgs.map(msg => 
+          msg.id === assistantMessageId 
+            ? { ...msg, streamingStep: step }
+            : msg
+        )
+      );
+    };
+    
+    const updateMessageContent = (content: string) => {
+      setMessages(msgs => 
+        msgs.map(msg => 
+          msg.id === assistantMessageId 
+            ? { ...msg, content }
+            : msg
+        )
+      );
+    };
+    
+    const markMessageComplete = () => {
+      setMessages(msgs => 
+        msgs.map(msg => 
+          msg.id === assistantMessageId 
+            ? { 
+                ...msg, 
+                isStreaming: false, 
+                isComplete: true,
+                streamingStep: undefined 
+              }
+            : msg
+        )
+      );
+    };
+    
+    const markMessageError = (errorMsg: string) => {
+      setMessages(msgs => 
+        msgs.map(msg => 
+          msg.id === assistantMessageId 
+            ? { 
+                ...msg, 
+                isStreaming: false, 
+                error: errorMsg,
+                content: msg.content || 'Error occurred during response generation' 
+              }
+            : msg
+        )
+      );
+    };
+    
+    try {
+      await sendMessageStream(
+        conversationId,
+        input,
+        (event: StreamEvent) => {
+          switch (event.type) {
+            case 'step': {
+              const step = event.data.step || event.data.message || 'Processing...';
+              setStreamingState(prev => ({
+                ...prev,
+                currentStep: step
+              }));
+              updateMessageStep(step);
+              break;
+            }
+            case 'token': {
+              const content = event.data.content || '';
+              setStreamingState(prev => {
+                const newContent = prev.accumulatedContent + content;
+                updateMessageContent(newContent);
+                return {
+                  ...prev,
+                  accumulatedContent: newContent
+                };
+              });
+              break;
+            }
+            case 'complete':
+              setStreamingState(prev => ({
+                ...prev,
+                isStreaming: false,
+                currentStep: 'Complete'
+              }));
+              markMessageComplete();
+              onMessageComplete?.();
+              break;
+            case 'error': {
+              const errorMsg = event.data.error || 'Stream error occurred';
+              setStreamingState(prev => ({
+                ...prev,
+                isStreaming: false,
+                error: errorMsg
+              }));
+              markMessageError(errorMsg);
+              setError(new Error(errorMsg));
+              break;
+            }
+          }
+        },
+        abortControllerRef.current.signal
+      );
+    } catch (error) {
+      const errorInstance = error instanceof Error ? error : new Error(getErrorMessage(error));
+      setError(errorInstance);
+      
+      setStreamingState(prev => ({
+        ...prev,
+        isStreaming: false,
+        error: errorInstance.message
+      }));
+      
+      markMessageError(errorInstance.message);
+    } finally {
+      abortControllerRef.current = null;
+    }
+  };
+
+  const cancelStreaming = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+      
+      setStreamingState(prev => ({
+        ...prev,
+        isStreaming: false,
+        currentStep: 'Cancelled'
+      }));
     }
   };
 
@@ -129,9 +321,12 @@ export function useChatApi(conversationId: string, onMessageComplete?: () => voi
   return { 
     messages, 
     send, 
+    sendStreaming,
+    cancelStreaming,
     loading, 
     loadingHistory, 
     error, 
+    streamingState,
     clearError,
     refreshHistory: () => loadThreadHistory(conversationId)
   };
