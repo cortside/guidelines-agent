@@ -1,13 +1,13 @@
 import { ChatService } from "../src/services/chatService.ts";
 
 export function createMockChatService(
-  overrides: Partial<ChatService> = {},
+  overrides: Partial<ChatService> = {}
 ): Partial<ChatService> {
   const mockService = {
     initialize: async () => {},
     processMessage: async (
       threadId: string,
-      content: string,
+      content: string
     ): Promise<string> => {
       return `Mock response to: ${content}`;
     },

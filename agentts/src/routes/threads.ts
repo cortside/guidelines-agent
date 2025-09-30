@@ -45,10 +45,10 @@ const threadRoutes: FastifyPluginAsyncTypebox = async function (fastify) {
         fastify.log.error(error);
         return ResponseFormatter.internalError(
           "retrieving thread statistics",
-          error as Error,
+          error as Error
         );
       }
-    },
+    }
   );
 
   /**
@@ -92,10 +92,10 @@ const threadRoutes: FastifyPluginAsyncTypebox = async function (fastify) {
         fastify.log.error(error);
         return ResponseFormatter.internalError(
           "retrieving threads",
-          error as Error,
+          error as Error
         );
       }
-    },
+    }
   );
 
   /**
@@ -147,10 +147,10 @@ const threadRoutes: FastifyPluginAsyncTypebox = async function (fastify) {
         fastify.log.error(error);
         return ResponseFormatter.internalError(
           "creating thread",
-          error as Error,
+          error as Error
         );
       }
-    },
+    }
   );
 
   /**
@@ -198,7 +198,7 @@ const threadRoutes: FastifyPluginAsyncTypebox = async function (fastify) {
 
         const success = threadManagementService.updateThreadName(
           threadId,
-          name,
+          name
         );
 
         if (!success) {
@@ -225,10 +225,10 @@ const threadRoutes: FastifyPluginAsyncTypebox = async function (fastify) {
         fastify.log.error(error);
         return ResponseFormatter.internalError(
           "updating thread",
-          error as Error,
+          error as Error
         );
       }
-    },
+    }
   );
 
   /**
@@ -279,10 +279,10 @@ const threadRoutes: FastifyPluginAsyncTypebox = async function (fastify) {
         fastify.log.error(error);
         return ResponseFormatter.internalError(
           "deleting thread",
-          error as Error,
+          error as Error
         );
       }
-    },
+    }
   );
 };
 

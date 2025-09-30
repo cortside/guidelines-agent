@@ -71,7 +71,7 @@ export default function App() {
       // Don't run initialization multiple times - this is the key protection
       if (initializationAttempted.current) {
         console.log(
-          `[${currentTime}] Skipping initialization: already attempted`,
+          `[${currentTime}] Skipping initialization: already attempted`
         );
         setInitializing(false);
         return;
@@ -80,7 +80,7 @@ export default function App() {
       // Don't initialize until threads have been loaded from the server
       if (!threadsLoaded) {
         console.log(
-          `[${currentTime}] Skipping initialization: threads not loaded yet`,
+          `[${currentTime}] Skipping initialization: threads not loaded yet`
         );
         return;
       }
@@ -89,7 +89,7 @@ export default function App() {
       if (currentThreadId) {
         console.log(
           `[${currentTime}] Thread already selected:`,
-          currentThreadId,
+          currentThreadId
         );
         setInitializing(false);
         initializationAttempted.current = true;
@@ -103,14 +103,14 @@ export default function App() {
         // Select the most recent thread (first in the sorted list)
         console.log(
           `[${currentTime}] Found ${threads.length} existing threads - selecting most recent:`,
-          threads[0].threadId,
+          threads[0].threadId
         );
         setCurrentThread(threads[0].threadId);
         setInitializing(false);
       } else {
         // Only create a new thread if no threads exist after loading is complete
         console.log(
-          `[${currentTime}] No existing threads found after loading - creating initial thread`,
+          `[${currentTime}] No existing threads found after loading - creating initial thread`
         );
         try {
           const threadId = await createThread();
@@ -121,7 +121,7 @@ export default function App() {
         } catch (error) {
           console.error(
             `[${currentTime}] Failed to create initial thread:`,
-            error,
+            error
           );
           // Don't reset attempted flag on error to prevent endless retries
         }

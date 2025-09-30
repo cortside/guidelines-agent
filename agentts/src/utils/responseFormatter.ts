@@ -47,7 +47,7 @@ export class ResponseFormatter {
   static success<T>(
     reply: FastifyReply,
     data: T,
-    statusCode: number = 200,
+    statusCode: number = 200
   ): void {
     reply.status(statusCode).send(data);
   }
@@ -60,7 +60,7 @@ export class ResponseFormatter {
     message: string,
     code: string,
     statusCode: number = 500,
-    additionalInfo?: { stack?: string; details?: ErrorResponse["details"] },
+    additionalInfo?: { stack?: string; details?: ErrorResponse["details"] }
   ): void {
     const errorResponse: ErrorResponse = {
       error: message,
@@ -78,7 +78,7 @@ export class ResponseFormatter {
   static createErrorResponse(
     message: string,
     code: string,
-    additionalInfo?: { stack?: string; details?: ErrorResponse["details"] },
+    additionalInfo?: { stack?: string; details?: ErrorResponse["details"] }
   ): ErrorResponse {
     return {
       error: message,
@@ -104,11 +104,11 @@ export class ResponseFormatter {
    */
   static validationError(
     fieldName: string,
-    requirement: string,
+    requirement: string
   ): ErrorResponse {
     return ResponseFormatter.createErrorResponse(
       `${fieldName} ${requirement}`,
-      "VALIDATION_ERROR",
+      "VALIDATION_ERROR"
     );
   }
 
@@ -117,7 +117,7 @@ export class ResponseFormatter {
    */
   static notFoundError(
     resourceType: string,
-    identifier?: string,
+    identifier?: string
   ): ErrorResponse {
     const message = identifier
       ? `${resourceType} with identifier '${identifier}' not found`
@@ -125,7 +125,7 @@ export class ResponseFormatter {
 
     return ResponseFormatter.createErrorResponse(
       message,
-      `${resourceType.toUpperCase()}_NOT_FOUND`,
+      `${resourceType.toUpperCase()}_NOT_FOUND`
     );
   }
 
@@ -138,7 +138,7 @@ export class ResponseFormatter {
       "INTERNAL_ERROR",
       process.env.NODE_ENV === "development" && error
         ? { stack: error.stack }
-        : undefined,
+        : undefined
     );
   }
 
@@ -148,7 +148,7 @@ export class ResponseFormatter {
   static serviceError(serviceName: string): ErrorResponse {
     return ResponseFormatter.createErrorResponse(
       `${serviceName} service is currently unavailable`,
-      "SERVICE_UNAVAILABLE",
+      "SERVICE_UNAVAILABLE"
     );
   }
 }

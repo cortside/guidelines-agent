@@ -69,7 +69,7 @@ export class StreamMonitor {
     this.metrics.lastStreamStartTime = new Date().toISOString();
 
     console.log(
-      `StreamMonitor: Started tracking stream ${messageId} for thread ${threadId}`,
+      `StreamMonitor: Started tracking stream ${messageId} for thread ${threadId}`
     );
   }
 
@@ -117,7 +117,7 @@ export class StreamMonitor {
       this.updateAverages();
 
       console.log(
-        `StreamMonitor: Completed stream ${messageId} in ${duration}ms with ${connection.tokenCount} tokens`,
+        `StreamMonitor: Completed stream ${messageId} in ${duration}ms with ${connection.tokenCount} tokens`
       );
     }
 
@@ -138,7 +138,7 @@ export class StreamMonitor {
       this.updateAverages();
 
       console.log(
-        `StreamMonitor: Cancelled stream ${messageId} after ${duration}ms with ${connection.tokenCount} tokens`,
+        `StreamMonitor: Cancelled stream ${messageId} after ${duration}ms with ${connection.tokenCount} tokens`
       );
     }
 
@@ -158,7 +158,7 @@ export class StreamMonitor {
       this.updateAverages();
 
       console.log(
-        `StreamMonitor: Stream ${messageId} errored after ${duration}ms: ${error}`,
+        `StreamMonitor: Stream ${messageId} errored after ${duration}ms: ${error}`
       );
     }
 
@@ -255,14 +255,14 @@ export class StreamMonitor {
     if (this.streamDurations.length > 0) {
       const sum = this.streamDurations.reduce((a, b) => a + b, 0);
       this.metrics.averageStreamDuration = Math.round(
-        sum / this.streamDurations.length,
+        sum / this.streamDurations.length
       );
     }
 
     if (this.tokenCounts.length > 0) {
       const sum = this.tokenCounts.reduce((a, b) => a + b, 0);
       this.metrics.averageTokensPerStream = Math.round(
-        sum / this.tokenCounts.length,
+        sum / this.tokenCounts.length
       );
     }
   }
@@ -284,6 +284,6 @@ export function initializeStreamMonitor(): void {
     () => {
       streamMonitor.cleanupStaleConnections();
     },
-    2 * 60 * 1000,
+    2 * 60 * 1000
   ); // 2 minutes
 }

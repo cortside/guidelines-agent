@@ -27,7 +27,7 @@ export class DocumentService {
           metadata: {
             source: url.replace(
               "https://raw.githubusercontent.com/cortside/guidelines/refs/heads/master",
-              "",
+              ""
             ),
           },
         }),
@@ -95,7 +95,7 @@ Output only a comma-separated list of tags, with no extra text, explanations, or
       } catch (error) {
         console.error(
           `Failed to generate tags for document ${doc.metadata.source}, using empty tags:`,
-          error,
+          error
         );
         doc.metadata["tags"] = [];
       }
@@ -127,21 +127,21 @@ Output only a comma-separated list of tags, with no extra text, explanations, or
         try {
           return await splitter.createDocuments(
             [doc.pageContent],
-            [doc.metadata],
+            [doc.metadata]
           );
         } catch (error) {
           console.error(
             `Error splitting document ${doc.metadata.source}:`,
-            error,
+            error
           );
           return [];
         }
-      }),
+      })
     );
 
     const allSplits = allSplitsArrays.flat();
     console.log(
-      `Split ${docs.length} documents into ${allSplits.length} sub-documents.`,
+      `Split ${docs.length} documents into ${allSplits.length} sub-documents.`
     );
     return allSplits;
   }

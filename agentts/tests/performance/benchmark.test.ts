@@ -28,7 +28,7 @@ describe("Performance Benchmarks", () => {
     assert.strictEqual(response.statusCode, 200);
     assert.ok(
       responseTime < 50,
-      `Response time ${responseTime}ms exceeded 50ms threshold`,
+      `Response time ${responseTime}ms exceeded 50ms threshold`
     );
 
     await fastify.close();
@@ -52,7 +52,7 @@ describe("Performance Benchmarks", () => {
     assert.strictEqual(response.statusCode, 200);
     assert.ok(
       responseTime < 10,
-      `Liveness probe response time ${responseTime}ms exceeded 10ms threshold`,
+      `Liveness probe response time ${responseTime}ms exceeded 10ms threshold`
     );
 
     await fastify.close();
@@ -71,7 +71,7 @@ describe("Performance Benchmarks", () => {
 
     const concurrentRequests = 50;
     const promises = Array.from({ length: concurrentRequests }, () =>
-      fastify.inject({ method: "GET", url: "/health" }),
+      fastify.inject({ method: "GET", url: "/health" })
     );
 
     const start = process.hrtime.bigint();
@@ -87,7 +87,7 @@ describe("Performance Benchmarks", () => {
 
     assert.ok(
       avgTime < 100,
-      `Average response time ${avgTime}ms too high for concurrent requests`,
+      `Average response time ${avgTime}ms too high for concurrent requests`
     );
 
     await fastify.close();
@@ -138,11 +138,11 @@ describe("Performance Benchmarks", () => {
 
     assert.ok(
       avgTime < 100,
-      `Average chat response time ${avgTime}ms too high`,
+      `Average chat response time ${avgTime}ms too high`
     );
     assert.ok(
       maxTime < 200,
-      `Maximum chat response time ${maxTime}ms too high`,
+      `Maximum chat response time ${maxTime}ms too high`
     );
 
     await fastify.close();
@@ -192,7 +192,7 @@ describe("Performance Benchmarks", () => {
     assert.strictEqual(body.total, 100);
     assert.ok(
       responseTime < 200,
-      `Thread list response time ${responseTime}ms too high for 100 threads`,
+      `Thread list response time ${responseTime}ms too high for 100 threads`
     );
 
     await fastify.close();
@@ -214,7 +214,7 @@ describe("Performance Benchmarks", () => {
     // Make many requests
     const requestCount = 100;
     const promises = Array.from({ length: requestCount }, () =>
-      fastify.inject({ method: "GET", url: "/health/live" }),
+      fastify.inject({ method: "GET", url: "/health/live" })
     );
 
     await Promise.all(promises);
@@ -231,7 +231,7 @@ describe("Performance Benchmarks", () => {
     const memoryIncreaseInMB = memoryIncrease / (1024 * 1024);
     assert.ok(
       memoryIncreaseInMB < 10,
-      `Memory increased by ${memoryIncreaseInMB}MB, which is too high`,
+      `Memory increased by ${memoryIncreaseInMB}MB, which is too high`
     );
 
     await fastify.close();
@@ -265,7 +265,7 @@ describe("Performance Benchmarks", () => {
     const responseSize = Buffer.byteLength(response.body, "utf8");
     assert.ok(
       responseSize > 1000,
-      "Response should contain the large mock answer",
+      "Response should contain the large mock answer"
     );
     assert.ok(responseSize < 10000, "Response should not be excessively large");
 

@@ -44,7 +44,7 @@ export class ServiceError extends AppError {
 export async function fastifyErrorHandler(
   error: FastifyError,
   request: FastifyRequest,
-  reply: FastifyReply,
+  reply: FastifyReply
 ): Promise<void> {
   // Default error values
   let statusCode = 500;
@@ -65,7 +65,7 @@ export async function fastifyErrorHandler(
         method: request.method,
         body: request.body,
       },
-      "Validation error occurred",
+      "Validation error occurred"
     );
   }
   // Handle our custom operational errors
@@ -109,7 +109,7 @@ export async function fastifyErrorHandler(
         params: request.params,
         query: request.query,
       },
-      "Unexpected error occurred",
+      "Unexpected error occurred"
     );
   }
 
@@ -138,7 +138,7 @@ export async function fastifyErrorHandler(
 // Pre-handler hook for custom validation logic
 export async function validationPreHandler(
   request: FastifyRequest,
-  reply: FastifyReply,
+  reply: FastifyReply
 ): Promise<void> {
   // This can be used for custom validation logic that goes beyond TypeBox schemas
   // Currently just a placeholder for future enhancements
@@ -148,7 +148,7 @@ export async function validationPreHandler(
 export async function errorLoggingHook(
   request: FastifyRequest,
   reply: FastifyReply,
-  error: FastifyError,
+  error: FastifyError
 ): Promise<void> {
   // Enhanced error logging with request context
   request.log.error(
@@ -166,6 +166,6 @@ export async function errorLoggingHook(
         statusCode: reply.statusCode,
       },
     },
-    "Request error occurred",
+    "Request error occurred"
   );
 }

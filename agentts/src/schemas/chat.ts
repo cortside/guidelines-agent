@@ -22,7 +22,7 @@ export const ChatRequestSchema = Type.Object({
       description: "Optional system message to provide context or instructions",
       examples: ["You are a helpful assistant focused on REST API guidelines"],
       maxLength: 2000,
-    }),
+    })
   ),
 });
 
@@ -45,7 +45,7 @@ export const ChatResponseSchema = Type.Object({
       format: "date-time",
       description: "When the response was generated",
       examples: ["2025-09-29T12:00:00.000Z"],
-    }),
+    })
   ),
 });
 
@@ -128,7 +128,7 @@ export const StreamStepEventSchema = Type.Object({
     {
       description: "Current workflow step being processed",
       examples: ["retrieval", "ranking", "generation"],
-    },
+    }
   ),
   status: Type.Union(
     [
@@ -139,7 +139,7 @@ export const StreamStepEventSchema = Type.Object({
     {
       description: "Status of the current step",
       examples: ["processing", "started"],
-    },
+    }
   ),
   message: Type.String({
     description: "Human-readable progress message",
@@ -177,7 +177,7 @@ export const StreamErrorEventSchema = Type.Intersect([
       Type.String({
         description: "Workflow step where error occurred",
         examples: ["retrieval", "generation"],
-      }),
+      })
     ),
   }),
 ]);
@@ -190,7 +190,7 @@ export const StreamCancelledEventSchema = Type.Intersect([
       Type.String({
         description: "Workflow step when cancelled",
         examples: ["generation", "ranking"],
-      }),
+      })
     ),
   }),
 ]);
@@ -228,7 +228,7 @@ export const StreamResponseSchema = Type.Object({
     },
     {
       description: "Possible event types in the SSE stream",
-    },
+    }
   ),
   example: Type.String({
     description: "Example SSE stream format",

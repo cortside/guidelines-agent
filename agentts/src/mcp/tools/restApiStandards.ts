@@ -48,7 +48,7 @@ export class RestApiStandardsTool implements MCPTool {
    */
   async execute(
     chatService: ChatService,
-    params: { format?: "streaming" | "complete" } = {},
+    params: { format?: "streaming" | "complete" } = {}
   ): Promise<MCPToolResponse | AsyncIterable<MCPStreamingResponse>> {
     const { format = "streaming" } = params;
 
@@ -81,7 +81,7 @@ export class RestApiStandardsTool implements MCPTool {
   private async *executeStreaming(
     query: string,
     threadId: string,
-    chatService: ChatService,
+    chatService: ChatService
   ): AsyncIterable<MCPStreamingResponse> {
     try {
       // Create a mock FastifyReply-like object to capture SSE events
@@ -158,7 +158,7 @@ export class RestApiStandardsTool implements MCPTool {
   private async executeComplete(
     query: string,
     threadId: string,
-    chatService: ChatService,
+    chatService: ChatService
   ): Promise<MCPToolResponse> {
     try {
       console.log("Executing complete (non-streaming) request...");
@@ -217,7 +217,7 @@ export class RestApiStandardsTool implements MCPTool {
                   console.warn(
                     "MCP Mock Reply: Failed to parse SSE data:",
                     accumulatedData,
-                    parseError,
+                    parseError
                   );
                 }
               }
@@ -236,7 +236,7 @@ export class RestApiStandardsTool implements MCPTool {
                 console.warn(
                   "MCP Mock Reply: Failed to parse SSE data:",
                   accumulatedData,
-                  parseError,
+                  parseError
                 );
               }
 

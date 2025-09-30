@@ -25,8 +25,8 @@ export const MCPToolSchema = Type.Object({
       {
         description: "JSON Schema defining the expected input parameters",
         additionalProperties: true,
-      },
-    ),
+      }
+    )
   ),
 });
 
@@ -40,7 +40,7 @@ export const MCPToolCallSchema = Type.Object({
     arguments: Type.Optional(
       Type.Record(Type.String(), Type.Any(), {
         description: "Arguments to pass to the tool",
-      }),
+      })
     ),
   }),
 });
@@ -57,7 +57,7 @@ export const MCPStreamingResponseSchema = Type.Object({
     ],
     {
       description: "Type of streaming event",
-    },
+    }
   ),
   data: Type.Any({
     description: "Event-specific data payload",
@@ -76,12 +76,12 @@ export const MCPToolResponseSchema = Type.Object({
       text: Type.String({
         description: "The response text content",
       }),
-    }),
+    })
   ),
   isError: Type.Optional(
     Type.Boolean({
       description: "Whether this response represents an error",
-    }),
+    })
   ),
 });
 
@@ -96,7 +96,7 @@ export const MCPErrorSchema = Type.Object({
   data: Type.Optional(
     Type.Any({
       description: "Additional error details",
-    }),
+    })
   ),
 });
 
@@ -108,8 +108,8 @@ export const MCPServerCapabilitiesSchema = Type.Object({
       {
         description: "Tool capabilities",
         additionalProperties: true,
-      },
-    ),
+      }
+    )
   ),
   resources: Type.Optional(
     Type.Object(
@@ -117,8 +117,8 @@ export const MCPServerCapabilitiesSchema = Type.Object({
       {
         description: "Resource capabilities",
         additionalProperties: true,
-      },
-    ),
+      }
+    )
   ),
   prompts: Type.Optional(
     Type.Object(
@@ -126,8 +126,8 @@ export const MCPServerCapabilitiesSchema = Type.Object({
       {
         description: "Prompt capabilities",
         additionalProperties: true,
-      },
-    ),
+      }
+    )
   ),
 });
 

@@ -89,7 +89,7 @@ describe("Health Routes", () => {
     const body = JSON.parse(response.body);
     assert.strictEqual(
       body.error,
-      "Service not ready - dependencies unavailable",
+      "Service not ready - dependencies unavailable"
     );
     assert.strictEqual(body.code, "SERVICE_NOT_READY");
     assert.ok(body.timestamp);

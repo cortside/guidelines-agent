@@ -12,7 +12,7 @@ import { getErrorMessage } from "../utils/getErrorMessage";
 
 export function useChatApi(
   conversationId: string,
-  onMessageComplete?: () => void,
+  onMessageComplete?: () => void
 ) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
@@ -58,10 +58,10 @@ export function useChatApi(
             // Filter out system instructions
             if (
               msg.content.includes(
-                "You are an assistant for question-answering tasks",
+                "You are an assistant for question-answering tasks"
               ) ||
               msg.content.includes(
-                "Use the provided context to answer user questions",
+                "Use the provided context to answer user questions"
               ) ||
               msg.content.startsWith("You are ")
             ) {
@@ -94,7 +94,7 @@ export function useChatApi(
         // Sort by timestamp to ensure correct chronological order
         .sort(
           (a, b) =>
-            new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+            new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
         )
         .map((msg) => ({
           id: msg.id || Date.now().toString() + Math.random().toString(36),
@@ -211,16 +211,16 @@ export function useChatApi(
     const updateMessageStep = (step: string) => {
       setMessages((msgs) =>
         msgs.map((msg) =>
-          msg.id === assistantMessageId ? { ...msg, streamingStep: step } : msg,
-        ),
+          msg.id === assistantMessageId ? { ...msg, streamingStep: step } : msg
+        )
       );
     };
 
     const updateMessageContent = (content: string) => {
       setMessages((msgs) =>
         msgs.map((msg) =>
-          msg.id === assistantMessageId ? { ...msg, content } : msg,
-        ),
+          msg.id === assistantMessageId ? { ...msg, content } : msg
+        )
       );
     };
 
@@ -234,8 +234,8 @@ export function useChatApi(
                 isComplete: true,
                 streamingStep: undefined,
               }
-            : msg,
-        ),
+            : msg
+        )
       );
     };
 
@@ -250,8 +250,8 @@ export function useChatApi(
                 content:
                   msg.content || "Error occurred during response generation",
               }
-            : msg,
-        ),
+            : msg
+        )
       );
     };
 
@@ -315,7 +315,7 @@ export function useChatApi(
             }
           }
         },
-        abortControllerRef.current.signal,
+        abortControllerRef.current.signal
       );
     } catch (error) {
       const errorInstance =

@@ -9,7 +9,7 @@
  */
 export function focusElement(
   element: HTMLElement | null,
-  delay: number = 10,
+  delay: number = 10
 ): void {
   if (!element) return;
 

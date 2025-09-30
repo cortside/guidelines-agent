@@ -35,7 +35,7 @@ async function createPineconeStore(embeddings: any): Promise<VectorStore> {
   }
 
   const pineconeIndex = pineconeClient.Index(
-    config.vectorStore.pinecone!.indexName,
+    config.vectorStore.pinecone!.indexName
   );
 
   // Clear existing documents if in development and force reload is enabled
@@ -74,7 +74,7 @@ export async function clearVectorStore(): Promise<void> {
     case "pinecone":
       if (pineconeClient) {
         const pineconeIndex = pineconeClient.Index(
-          config.vectorStore.pinecone!.indexName,
+          config.vectorStore.pinecone!.indexName
         );
         await pineconeIndex.deleteAll();
       }
@@ -86,7 +86,7 @@ export async function clearVectorStore(): Promise<void> {
     case "memory":
     default:
       console.warn(
-        `Clear operation not implemented for ${config.vectorStore.provider} vector store`,
+        `Clear operation not implemented for ${config.vectorStore.provider} vector store`
       );
       break;
   }

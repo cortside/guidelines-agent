@@ -30,7 +30,7 @@ export class ThreadManagementService {
 
   constructor() {
     console.log(
-      "ThreadManagementService initialized with in-memory storage + JSON backup",
+      "ThreadManagementService initialized with in-memory storage + JSON backup"
     );
     this.loadFromBackup();
   }
@@ -40,19 +40,19 @@ export class ThreadManagementService {
    */
   async initializeWithValidation(chatService: any): Promise<void> {
     console.log(
-      "ThreadManagementService: Validating threads against agent data",
+      "ThreadManagementService: Validating threads against agent data"
     );
 
     const threadIds = Array.from(this.threadMetadata.keys());
     console.log(
-      `ThreadManagementService: Found ${threadIds.length} threads to validate`,
+      `ThreadManagementService: Found ${threadIds.length} threads to validate`
     );
     const validThreadIds: string[] = [];
 
     for (const threadId of threadIds) {
       try {
         console.log(
-          `ThreadManagementService: Validating thread ${threadId}...`,
+          `ThreadManagementService: Validating thread ${threadId}...`
         );
         // Try to get the thread history to see if it exists in the agent
         const history = await chatService.getThreadHistory(threadId);
@@ -61,19 +61,19 @@ export class ThreadManagementService {
         // Empty threads that were just created but never used should be cleaned up
         if (Array.isArray(history) && history.length > 0) {
           console.log(
-            `ThreadManagementService: Thread ${threadId} is valid (${history.length} messages)`,
+            `ThreadManagementService: Thread ${threadId} is valid (${history.length} messages)`
           );
           validThreadIds.push(threadId);
         } else {
           console.log(
-            `ThreadManagementService: Thread ${threadId} has no messages, removing from metadata (${history ? history.length : "null"} messages)`,
+            `ThreadManagementService: Thread ${threadId} has no messages, removing from metadata (${history ? history.length : "null"} messages)`
           );
           this.threadMetadata.delete(threadId);
         }
       } catch (error) {
         console.log(
           `ThreadManagementService: Thread ${threadId} validation failed, removing from metadata:`,
-          error instanceof Error ? error.message : String(error),
+          error instanceof Error ? error.message : String(error)
         );
         this.threadMetadata.delete(threadId);
       }
@@ -83,7 +83,7 @@ export class ThreadManagementService {
     this.saveToBackup();
 
     console.log(
-      `ThreadManagementService: Validation complete. ${validThreadIds.length}/${threadIds.length} threads are valid`,
+      `ThreadManagementService: Validation complete. ${validThreadIds.length}/${threadIds.length} threads are valid`
     );
   }
 
@@ -106,11 +106,11 @@ export class ThreadManagementService {
         });
 
         console.log(
-          `ThreadManagementService: Loaded ${threads.length} threads from backup`,
+          `ThreadManagementService: Loaded ${threads.length} threads from backup`
         );
       } else {
         console.log(
-          "ThreadManagementService: No backup file found, starting fresh",
+          "ThreadManagementService: No backup file found, starting fresh"
         );
       }
     } catch (error) {
@@ -128,7 +128,7 @@ export class ThreadManagementService {
       const threads = Array.from(this.threadMetadata.values());
       fs.writeFileSync(backupPath, JSON.stringify(threads, null, 2), "utf8");
       console.log(
-        `ThreadManagementService: Saved ${threads.length} threads to backup`,
+        `ThreadManagementService: Saved ${threads.length} threads to backup`
       );
     } catch (error) {
       console.error("ThreadManagementService: Error saving backup:", error);
@@ -145,11 +145,11 @@ export class ThreadManagementService {
       if (fs.existsSync(backupPath)) {
         fs.writeFileSync(backupPath, JSON.stringify([], null, 2), "utf8");
         console.log(
-          "ThreadManagementService: Cleared backup file to start fresh",
+          "ThreadManagementService: Cleared backup file to start fresh"
         );
       } else {
         console.log(
-          "ThreadManagementService: No backup file to clear, starting fresh",
+          "ThreadManagementService: No backup file to clear, starting fresh"
         );
       }
     } catch (error) {
@@ -173,11 +173,11 @@ export class ThreadManagementService {
       }));
 
     console.log(
-      `ThreadManagementService: Returning ${threads.length} threads sorted by lastActivity`,
+      `ThreadManagementService: Returning ${threads.length} threads sorted by lastActivity`
     );
     threads.forEach((thread, index) => {
       console.log(
-        `  ${index + 1}. ${thread.threadId} - ${thread.name} - lastActivity: ${thread.lastActivity.toISOString()}`,
+        `  ${index + 1}. ${thread.threadId} - ${thread.name} - lastActivity: ${thread.lastActivity.toISOString()}`
       );
     });
 
@@ -207,7 +207,7 @@ export class ThreadManagementService {
     // Don't create if already exists
     if (this.threadMetadata.has(threadId)) {
       console.log(
-        `Thread ${threadId} metadata already exists, skipping creation`,
+        `Thread ${threadId} metadata already exists, skipping creation`
       );
       return;
     }
@@ -225,7 +225,7 @@ export class ThreadManagementService {
 
     this.threadMetadata.set(threadId, metadata);
     console.log(
-      `Created thread metadata for ${threadId} with name "${threadName}"`,
+      `Created thread metadata for ${threadId} with name "${threadName}"`
     );
 
     // Save to backup file
@@ -239,7 +239,7 @@ export class ThreadManagementService {
     threadId: string,
     userMessage: string,
     isNewThread: boolean = false,
-    messageTimestamp?: Date,
+    messageTimestamp?: Date
   ): void {
     const now = messageTimestamp || new Date();
     const existing = this.threadMetadata.get(threadId);
@@ -253,14 +253,14 @@ export class ThreadManagementService {
         // Update thread name based on first real message
         existing.name = this.generateThreadName(userMessage);
         console.log(
-          `Updated thread ${threadId} with first real message, new name: "${existing.name}"`,
+          `Updated thread ${threadId} with first real message, new name: "${existing.name}"`
         );
       } else {
         // Update existing thread with more messages
         existing.lastActivity = now;
         existing.messageCount += 1;
         console.log(
-          `Updated thread ${threadId} lastActivity to ${now.toISOString()}, messageCount: ${existing.messageCount}`,
+          `Updated thread ${threadId} lastActivity to ${now.toISOString()}, messageCount: ${existing.messageCount}`
         );
       }
     } else {
@@ -276,7 +276,7 @@ export class ThreadManagementService {
       };
       this.threadMetadata.set(threadId, metadata);
       console.log(
-        `Created new thread ${threadId} via updateThreadMetadata with first message`,
+        `Created new thread ${threadId} via updateThreadMetadata with first message`
       );
     }
 
@@ -381,7 +381,7 @@ export class ThreadManagementService {
             "made",
             "may",
             "part",
-          ].includes(word),
+          ].includes(word)
       )
       .slice(0, 4); // Take first 4 meaningful words
 
@@ -391,7 +391,7 @@ export class ThreadManagementService {
 
     // Capitalize first letter of each word
     const capitalizedWords = words.map(
-      (word) => word.charAt(0).toUpperCase() + word.slice(1),
+      (word) => word.charAt(0).toUpperCase() + word.slice(1)
     );
 
     return capitalizedWords.join(" ");
@@ -419,7 +419,7 @@ export class ThreadManagementService {
     if (metadata) {
       metadata.lastActivity = activityTime || new Date();
       console.log(
-        `Updated thread ${threadId} activity to ${metadata.lastActivity.toISOString()}`,
+        `Updated thread ${threadId} activity to ${metadata.lastActivity.toISOString()}`
       );
       this.saveToBackup();
       return true;
@@ -459,14 +459,14 @@ export class ThreadManagementService {
         this.threadMetadata.delete(threadId);
         deletedCount++;
         console.log(
-          `Cleaned up old thread: ${threadId} (age: ${Math.round(age / (24 * 60 * 60 * 1000))} days)`,
+          `Cleaned up old thread: ${threadId} (age: ${Math.round(age / (24 * 60 * 60 * 1000))} days)`
         );
       }
     }
 
     if (deletedCount > 0) {
       console.log(
-        `ThreadManagementService: Cleaned up ${deletedCount} old threads`,
+        `ThreadManagementService: Cleaned up ${deletedCount} old threads`
       );
     }
 
@@ -496,15 +496,15 @@ export class ThreadManagementService {
     }
 
     const sortedByCreation = threads.sort(
-      (a, b) => a.createdAt.getTime() - b.createdAt.getTime(),
+      (a, b) => a.createdAt.getTime() - b.createdAt.getTime()
     );
     const sortedByMessages = threads.sort(
-      (a, b) => b.messageCount - a.messageCount,
+      (a, b) => b.messageCount - a.messageCount
     );
 
     const totalMessages = threads.reduce(
       (sum, thread) => sum + thread.messageCount,
-      0,
+      0
     );
 
     return {

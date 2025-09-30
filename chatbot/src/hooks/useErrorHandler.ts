@@ -71,7 +71,7 @@ export function useErrorHandler(): ErrorState & ErrorHandlerActions {
         setError(error as Error);
       }
     },
-    [clearError, setError],
+    [clearError, setError]
   );
 
   const handleAsyncError = useCallback(
@@ -85,7 +85,7 @@ export function useErrorHandler(): ErrorState & ErrorHandlerActions {
         return null;
       }
     },
-    [clearError, setError],
+    [clearError, setError]
   );
 
   return {
@@ -125,13 +125,13 @@ export function useFormErrors<T extends Record<string, string>>() {
     (
       field: keyof T,
       value: string,
-      validator: (value: string) => string | null,
+      validator: (value: string) => string | null
     ) => {
       const error = validator(value);
       setFieldError(field, error);
       return error === null;
     },
-    [setFieldError],
+    [setFieldError]
   );
 
   const hasErrors = Object.keys(fieldErrors).length > 0;

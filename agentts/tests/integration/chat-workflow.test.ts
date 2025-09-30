@@ -127,7 +127,7 @@ describe("Chat Workflow Integration", () => {
           threadId: `thread-${i}`,
           message: `Concurrent message ${i}`,
         },
-      }),
+      })
     );
 
     const responses = await Promise.all(promises);
@@ -144,7 +144,7 @@ describe("Chat Workflow Integration", () => {
   test("Health endpoints remain responsive during load", async (t) => {
     const healthRequests = 10;
     const promises = Array.from({ length: healthRequests }, () =>
-      fastify.inject({ method: "GET", url: "/health" }),
+      fastify.inject({ method: "GET", url: "/health" })
     );
 
     const start = process.hrtime.bigint();
@@ -161,7 +161,7 @@ describe("Chat Workflow Integration", () => {
     // Health endpoints should be very fast
     assert.ok(
       avgTime < 10,
-      `Average health response time ${avgTime}ms too high`,
+      `Average health response time ${avgTime}ms too high`
     );
   });
 });

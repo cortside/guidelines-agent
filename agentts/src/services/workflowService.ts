@@ -22,14 +22,14 @@ export class WorkflowService {
   static create(
     vectorStore: VectorStore,
     llm: ChatOpenAI,
-    promptTemplate: any,
+    promptTemplate: any
   ) {
     const searchSchema = z.object({
       query: z.string().describe("Search query to run."),
       tags: z
         .array(z.string())
         .describe(
-          "Required Functional and topical tags that describe the users query.",
+          "Required Functional and topical tags that describe the users query."
         ),
     });
 
@@ -38,7 +38,7 @@ export class WorkflowService {
       llm: ChatOpenAI,
       query: string,
       docs: Document[],
-      topN: number,
+      topN: number
     ): Promise<Document[]> {
       console.log(`Ranking ${docs.length} documents for query: "${query}"`);
       if (docs.length <= topN) return docs;
@@ -73,7 +73,7 @@ export class WorkflowService {
       } catch (error) {
         console.error(
           "Error ranking documents, returning first N documents:",
-          error,
+          error
         );
         return docs.slice(0, topN);
       }
@@ -82,7 +82,7 @@ export class WorkflowService {
     const retrieve = tool(
       async (search: z.infer<typeof searchSchema>) => {
         console.log(
-          `Searching for: "${search.query}" with tags: ${search.tags.join(", ")}`,
+          `Searching for: "${search.query}" with tags: ${search.tags.join(", ")}`
         );
 
         try {
@@ -91,7 +91,7 @@ export class WorkflowService {
             await vectorStore.similaritySearchWithScore(
               search.query,
               config.retrieval.maxDocuments,
-              { tags: { $in: search.tags } },
+              { tags: { $in: search.tags } }
             );
           console.log(`Retrieved ${retrievedDocsWithScores.length} documents`);
 
@@ -107,7 +107,7 @@ export class WorkflowService {
                 : "[No line info]";
             const tags = doc.metadata.tags ? doc.metadata.tags : [];
             console.log(
-              `Retrieved Doc${i + 1}: ${sourceSlice} ${lines} Tags: ${tags} Score: ${score}`,
+              `Retrieved Doc${i + 1}: ${sourceSlice} ${lines} Tags: ${tags} Score: ${score}`
             );
           });
 
@@ -117,7 +117,7 @@ export class WorkflowService {
             llm,
             search.query,
             filteredDocs,
-            config.retrieval.rankedDocuments,
+            config.retrieval.rankedDocuments
           );
 
           const serialized = selectedDocs
@@ -147,7 +147,7 @@ export class WorkflowService {
                 : "[No line info]";
             const tags = doc.metadata.tags ? doc.metadata.tags : [];
             console.log(
-              `Selected Doc${i + 1}: ${source} ${lines} Tags: ${tags}`,
+              `Selected Doc${i + 1}: ${source} ${lines} Tags: ${tags}`
             );
           });
 
@@ -162,7 +162,7 @@ export class WorkflowService {
         description: "Retrieve information related to a query.",
         schema: searchSchema,
         responseFormat: "content_and_artifact",
-      },
+      }
     );
 
     // Step 1: Generate an AIMessage that may include a tool-call to be sent.
@@ -185,9 +185,9 @@ export class WorkflowService {
     async function generate(state: typeof MessagesAnnotation.State) {
       try {
         // Get generated ToolMessages
-        let recentToolMessages: ToolMessage[] = [];
+        const recentToolMessages: ToolMessage[] = [];
         for (let i = state["messages"].length - 1; i >= 0; i--) {
-          let message = state["messages"][i];
+          const message = state["messages"][i];
           if (message instanceof ToolMessage) {
             recentToolMessages.push(message);
           } else {
@@ -201,7 +201,7 @@ export class WorkflowService {
           .map((doc) =>
             typeof doc.content === "string"
               ? doc.content
-              : JSON.stringify(doc.content),
+              : JSON.stringify(doc.content)
           )
           .join("\n");
 
@@ -218,7 +218,7 @@ export class WorkflowService {
           (message) =>
             message instanceof HumanMessage ||
             message instanceof SystemMessage ||
-            (message instanceof AIMessage && message.tool_calls?.length == 0),
+            (message instanceof AIMessage && message.tool_calls?.length == 0)
         );
 
         const prompt = [

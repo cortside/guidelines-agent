@@ -32,7 +32,7 @@ export function useConversations() {
     // Prevent multiple simultaneous loadThreads calls, but allow forced refresh
     if (loadingThreads.current) {
       console.log(
-        "useConversations: loadThreads already in progress, skipping",
+        "useConversations: loadThreads already in progress, skipping"
       );
       return;
     }
@@ -40,7 +40,7 @@ export function useConversations() {
     // Skip if already loaded unless it's a forced refresh
     if (threadsLoaded.current && !forceRefresh) {
       console.log(
-        "useConversations: threads already loaded and not forced refresh, skipping",
+        "useConversations: threads already loaded and not forced refresh, skipping"
       );
       return;
     }
@@ -53,7 +53,7 @@ export function useConversations() {
       console.log(
         "useConversations: getAllThreads returned",
         threads.length,
-        "threads",
+        "threads"
       );
 
       // Convert API response to local format and sort intelligently
@@ -70,7 +70,7 @@ export function useConversations() {
           // Check if all updatedAt dates are very close (within 1 minute)
           // This would indicate they're just current timestamps from server restarts
           const timeDiff = Math.abs(
-            a.updatedAt.getTime() - b.updatedAt.getTime(),
+            a.updatedAt.getTime() - b.updatedAt.getTime()
           );
           if (timeDiff < 60000) {
             // Less than 1 minute difference
@@ -85,7 +85,7 @@ export function useConversations() {
       console.log(
         "useConversations: Setting state with",
         conversations.length,
-        "conversations",
+        "conversations"
       );
       setState((prev) => ({
         ...prev,
@@ -116,7 +116,7 @@ export function useConversations() {
       // Global protection against multiple thread creation during app initialization
       if (globalInitializationInProgress) {
         console.log(
-          "useConversations: Global initialization in progress, skipping thread creation",
+          "useConversations: Global initialization in progress, skipping thread creation"
         );
         return null;
       }
@@ -124,7 +124,7 @@ export function useConversations() {
       // Prevent duplicate thread creation during React StrictMode double-rendering
       if (creatingThread.current) {
         console.log(
-          "useConversations: Thread creation already in progress, skipping",
+          "useConversations: Thread creation already in progress, skipping"
         );
         return null;
       }
@@ -140,7 +140,7 @@ export function useConversations() {
         const result = await createNewThread(name);
         console.log(
           "useConversations: Thread created with ID:",
-          result.threadId,
+          result.threadId
         );
         // Don't reload all threads, just add the new thread to the list
         const newThread = {
@@ -176,7 +176,7 @@ export function useConversations() {
         }, 1000); // Keep 1000ms delay
       }
     },
-    [],
+    []
   ); // No dependencies to break the cycle
 
   // Delete thread
@@ -190,7 +190,7 @@ export function useConversations() {
         setState((prev) => ({
           ...prev,
           threads: prev.threads.filter(
-            (thread) => thread.threadId !== threadId,
+            (thread) => thread.threadId !== threadId
           ),
           // Clear currentThreadId if it was the deleted thread
           currentThreadId:
@@ -209,7 +209,7 @@ export function useConversations() {
         return false;
       }
     },
-    [],
+    []
   ); // No dependencies
 
   // Rename thread
@@ -223,9 +223,7 @@ export function useConversations() {
         setState((prev) => ({
           ...prev,
           threads: prev.threads.map((thread) =>
-            thread.threadId === threadId
-              ? { ...thread, name: newName }
-              : thread,
+            thread.threadId === threadId ? { ...thread, name: newName } : thread
           ),
         }));
 
@@ -241,7 +239,7 @@ export function useConversations() {
         return false;
       }
     },
-    [],
+    []
   ); // No dependencies
 
   // Set current thread

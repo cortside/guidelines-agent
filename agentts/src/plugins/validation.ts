@@ -29,7 +29,7 @@ const validationPlugin: FastifyPluginAsyncTypebox = async function (fastify) {
       // Check for valid characters (alphanumeric, hyphens, underscores)
       if (!/^[a-zA-Z0-9_-]+$/.test(threadId)) {
         throw new ValidationError(
-          "threadId must contain only alphanumeric characters, hyphens, and underscores",
+          "threadId must contain only alphanumeric characters, hyphens, and underscores"
         );
       }
     },
@@ -53,7 +53,7 @@ const validationPlugin: FastifyPluginAsyncTypebox = async function (fastify) {
       // Check for potentially harmful content patterns
       if (message.includes("<script") || message.includes("javascript:")) {
         throw new ValidationError(
-          "message contains potentially harmful content",
+          "message contains potentially harmful content"
         );
       }
     },
@@ -83,7 +83,7 @@ const validationPlugin: FastifyPluginAsyncTypebox = async function (fastify) {
       if (limit !== undefined) {
         if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
           throw new ValidationError(
-            "limit must be an integer between 1 and 100",
+            "limit must be an integer between 1 and 100"
           );
         }
       }
@@ -114,7 +114,7 @@ const validationPlugin: FastifyPluginAsyncTypebox = async function (fastify) {
           params: request.params,
           query: request.query,
         },
-        "Validation starting",
+        "Validation starting"
       );
     }
   });
@@ -195,10 +195,10 @@ export const ValidationErrorSchema = Type.Object({
   code: Type.Literal("VALIDATION_ERROR"),
   timestamp: Type.String({ format: "date-time" }),
   field: Type.Optional(
-    Type.String({ description: "Field that failed validation" }),
+    Type.String({ description: "Field that failed validation" })
   ),
   value: Type.Optional(
-    Type.Any({ description: "Invalid value that was provided" }),
+    Type.Any({ description: "Invalid value that was provided" })
   ),
 });
 

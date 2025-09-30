@@ -20,7 +20,7 @@ export const ErrorResponseSchema = Type.Object({
   stack: Type.Optional(
     Type.String({
       description: "Stack trace (only included in development mode)",
-    }),
+    })
   ),
   details: Type.Optional(
     Type.Object(
@@ -34,8 +34,8 @@ export const ErrorResponseSchema = Type.Object({
         description:
           "Additional error context (only included in development mode)",
         additionalProperties: true,
-      },
-    ),
+      }
+    )
   ),
 });
 
@@ -50,7 +50,7 @@ export const SuccessResponseSchema = Type.Object({
   message: Type.Optional(
     Type.String({
       description: "Optional success message",
-    }),
+    })
   ),
 });
 
@@ -65,6 +65,6 @@ export const CommonHeaders = Type.Object({
   "X-Request-ID": Type.Optional(
     Type.String({
       description: "Unique request identifier for tracing",
-    }),
+    })
   ),
 });

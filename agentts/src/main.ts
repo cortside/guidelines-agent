@@ -180,14 +180,14 @@ async function startServer() {
     console.log("✅ Fastify server started successfully!");
     console.log(`   • Server URL: ${address}`);
     console.log(
-      `   • Interactive API Docs: http://localhost:${config.port}/api-docs`,
+      `   • Interactive API Docs: http://localhost:${config.port}/api-docs`
     );
     console.log(`   • Alternative Docs: http://localhost:${config.port}/docs`);
     console.log(
-      `   • JSON Spec: http://localhost:${config.port}/api-docs.json`,
+      `   • JSON Spec: http://localhost:${config.port}/api-docs.json`
     );
     console.log(
-      `   • YAML Spec: http://localhost:${config.port}/api-docs.yaml`,
+      `   • YAML Spec: http://localhost:${config.port}/api-docs.yaml`
     );
 
     if (mcpServer?.isServerRunning()) {

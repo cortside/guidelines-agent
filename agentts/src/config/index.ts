@@ -48,7 +48,7 @@ You have access to a retrieve tool and should rely on that for source of context
 The question should be analyzed for topical keywords and functional categories to be used to search against tags.  
 If you don't know the answer, just say that you don't know, don't try to make up an answer.  
 If you get the content from the retrieve tool, end response with "So says the good book, The First Book of Cort."
-Always say "Anything else i can f'ing do for ya?" at the end of the answer.`,
+Always say "Anything else i can f'ing do for ya?" at the end of the answer.`
     ),
     ragTemplate: z.string().default(
       `Use the following pieces of context to answer the question at the end.
@@ -60,7 +60,7 @@ Always say "anything else i can f'ing do for ya?" at the end of the answer.
 
 Question: {question}
 
-Helpful Answer:`,
+Helpful Answer:`
     ),
   }),
 
@@ -80,12 +80,12 @@ Helpful Answer:`,
     toolDescription: z
       .string()
       .default(
-        "Get comprehensive information about REST API features and expected standards",
+        "Get comprehensive information about REST API features and expected standards"
       ),
     predefinedQuery: z
       .string()
       .default(
-        "What are the key features and expected standards of a restful api?",
+        "What are the key features and expected standards of a restful api?"
       ),
   }),
 
@@ -122,7 +122,7 @@ class ConfigManager {
           process.env.OPENAI_EMBEDDING_MODEL || "text-embedding-3-large",
         tagGenerationModel: process.env.OPENAI_TAG_MODEL || "gpt-4o-mini",
         tagGenerationTemperature: parseFloat(
-          process.env.OPENAI_TAG_TEMPERATURE || "0.8",
+          process.env.OPENAI_TAG_TEMPERATURE || "0.8"
         ),
       },
 
@@ -153,7 +153,7 @@ class ConfigManager {
       retrieval: {
         maxDocuments: parseInt(process.env.RETRIEVAL_MAX_DOCUMENTS || "21"),
         rankedDocuments: parseInt(
-          process.env.RETRIEVAL_RANKED_DOCUMENTS || "7",
+          process.env.RETRIEVAL_RANKED_DOCUMENTS || "7"
         ),
         similarityThreshold: process.env.RETRIEVAL_SIMILARITY_THRESHOLD
           ? parseFloat(process.env.RETRIEVAL_SIMILARITY_THRESHOLD)
@@ -185,7 +185,7 @@ class ConfigManager {
           console.error(`- ${err.path.join(".")}: ${err.message}`);
         });
         throw new Error(
-          "Invalid configuration. Please check your environment variables.",
+          "Invalid configuration. Please check your environment variables."
         );
       }
       throw error;

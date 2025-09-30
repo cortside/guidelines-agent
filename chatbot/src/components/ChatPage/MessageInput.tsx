@@ -42,7 +42,7 @@ export function MessageInput({
         focusElementNextTick(node);
       }
     },
-    [textareaRef, input, isMobile],
+    [textareaRef, input, isMobile]
   );
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {

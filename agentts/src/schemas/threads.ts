@@ -10,12 +10,12 @@ export const CreateThreadRequestSchema = Type.Object({
       description: "Optional name for the thread",
       examples: ["API Guidelines Discussion"],
       maxLength: 200,
-    }),
+    })
   ),
   metadata: Type.Optional(
     Type.Record(Type.String(), Type.Any(), {
       description: "Optional metadata for the thread",
-    }),
+    })
   ),
 });
 
@@ -31,7 +31,7 @@ export const ThreadSchema = Type.Object({
     Type.String({
       description: "Thread name if provided",
       examples: ["API Guidelines Discussion"],
-    }),
+    })
   ),
   createdAt: Type.String({
     format: "date-time",
@@ -50,7 +50,7 @@ export const ThreadSchema = Type.Object({
   metadata: Type.Optional(
     Type.Record(Type.String(), Type.Any(), {
       description: "Thread metadata",
-    }),
+    })
   ),
 });
 
@@ -74,13 +74,13 @@ export const ListThreadsResponseSchema = Type.Object({
     Type.Number({
       description: "Current page number (if paginated)",
       examples: [1],
-    }),
+    })
   ),
   pageSize: Type.Optional(
     Type.Number({
       description: "Page size (if paginated)",
       examples: [20],
-    }),
+    })
   ),
 });
 
@@ -93,12 +93,12 @@ export const UpdateThreadRequestSchema = Type.Object({
       description: "Updated name for the thread",
       examples: ["Updated Discussion"],
       maxLength: 200,
-    }),
+    })
   ),
   metadata: Type.Optional(
     Type.Record(Type.String(), Type.Any(), {
       description: "Updated metadata for the thread",
-    }),
+    })
   ),
 });
 
@@ -135,8 +135,8 @@ export const ThreadStatsResponseSchema = Type.Object({
       },
       {
         description: "Information about the oldest thread",
-      },
-    ),
+      }
+    )
   ),
   newestThread: Type.Optional(
     Type.Object(
@@ -147,8 +147,8 @@ export const ThreadStatsResponseSchema = Type.Object({
       },
       {
         description: "Information about the newest thread",
-      },
-    ),
+      }
+    )
   ),
   mostActiveThread: Type.Optional(
     Type.Object(
@@ -159,8 +159,8 @@ export const ThreadStatsResponseSchema = Type.Object({
       },
       {
         description: "Information about the most active thread",
-      },
-    ),
+      }
+    )
   ),
   averageMessageCount: Type.Number({
     description: "Average number of messages per thread",

@@ -34,7 +34,7 @@ export function Sidebar({
 
   const handleDeleteThread = async (
     threadId: string,
-    event: React.MouseEvent,
+    event: React.MouseEvent
   ) => {
     event.stopPropagation();
     if (confirm("Are you sure you want to delete this conversation?")) {

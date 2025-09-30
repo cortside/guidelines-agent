@@ -41,7 +41,7 @@ const chatRoutes: FastifyPluginAsyncTypebox = async function (fastify) {
         if (!threadId.trim() || !message.trim()) {
           return ResponseFormatter.createErrorResponse(
             "threadId and message cannot be empty",
-            "VALIDATION_ERROR",
+            "VALIDATION_ERROR"
           );
         }
 
@@ -57,10 +57,10 @@ const chatRoutes: FastifyPluginAsyncTypebox = async function (fastify) {
         fastify.log.error(error);
         return ResponseFormatter.internalError(
           "processing chat message",
-          error as Error,
+          error as Error
         );
       }
-    },
+    }
   );
 
   /**
@@ -99,8 +99,8 @@ const chatRoutes: FastifyPluginAsyncTypebox = async function (fastify) {
             .send(
               ResponseFormatter.createErrorResponse(
                 "threadId and message cannot be empty",
-                "VALIDATION_ERROR",
-              ),
+                "VALIDATION_ERROR"
+              )
             );
         }
 
@@ -120,7 +120,7 @@ const chatRoutes: FastifyPluginAsyncTypebox = async function (fastify) {
           message,
           threadId,
           reply,
-          systemMessage,
+          systemMessage
         );
       } catch (error) {
         fastify.log.error(error, "Streaming error");
@@ -146,7 +146,7 @@ const chatRoutes: FastifyPluginAsyncTypebox = async function (fastify) {
           reply.raw.end();
         }
       }
-    },
+    }
   );
 
   /**
@@ -189,7 +189,7 @@ const chatRoutes: FastifyPluginAsyncTypebox = async function (fastify) {
         if (!threadId.trim()) {
           return ResponseFormatter.validationError(
             "threadId",
-            "cannot be empty",
+            "cannot be empty"
           );
         }
 
@@ -220,10 +220,10 @@ const chatRoutes: FastifyPluginAsyncTypebox = async function (fastify) {
         fastify.log.error(error);
         return ResponseFormatter.internalError(
           "retrieving thread history",
-          error as Error,
+          error as Error
         );
       }
-    },
+    }
   );
 };
 

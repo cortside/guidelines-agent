@@ -32,7 +32,7 @@ export class PromptService {
       } catch (error) {
         console.warn(
           "Failed to load prompt template from hub, using default:",
-          error,
+          error
         );
         // Fallback to local template
         this.hubPromptTemplateCache = this.ragPromptTemplate;
@@ -47,7 +47,7 @@ export class PromptService {
     // Insert available tags into the system message
     return baseMessage.replace(
       'The following tags are valid: [${loader.tags.join(", ")}]',
-      `The following tags are valid: [${availableTags.join(", ")}]`,
+      `The following tags are valid: [${availableTags.join(", ")}]`
     );
   }
 

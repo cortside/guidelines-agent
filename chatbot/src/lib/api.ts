@@ -40,7 +40,7 @@ export async function getThread(threadId: string): Promise<ThreadResponse> {
 }
 
 export async function createNewThread(
-  name?: string,
+  name?: string
 ): Promise<{ threadId: string }> {
   console.log("API: Creating new thread with name:", name);
   console.trace("API: createNewThread called from:");
@@ -51,7 +51,7 @@ export async function createNewThread(
 
 export async function updateThreadName(
   threadId: string,
-  name: string,
+  name: string
 ): Promise<void> {
   await axios.patch(`${API_URL}/threads/${threadId}`, { name });
 }
@@ -71,7 +71,7 @@ export async function sendMessageStream(
   threadId: string,
   message: string,
   onEvent: (event: StreamEvent) => void,
-  signal?: AbortSignal,
+  signal?: AbortSignal
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     // Use fetch with SSE for POST requests (EventSource doesn't support POST)
@@ -107,7 +107,7 @@ async function processStreamResponse(
   body: ReadableStream<Uint8Array>,
   onEvent: (event: StreamEvent) => void,
   resolve: () => void,
-  reject: (error: Error) => void,
+  reject: (error: Error) => void
 ): Promise<void> {
   const reader = body.getReader();
   const decoder = new TextDecoder();
@@ -153,7 +153,7 @@ function processSSEChunk(
   chunk: string,
   onEvent: (event: StreamEvent) => void,
   resolve: () => void,
-  reject: (error: Error) => void,
+  reject: (error: Error) => void
 ): void {
   const lines = chunk.split("\n");
   let currentEventType = "message";
@@ -203,7 +203,7 @@ function processSSEChunk(
 function handleStreamError(
   error: unknown,
   onEvent: (event: StreamEvent) => void,
-  reject: (error: Error) => void,
+  reject: (error: Error) => void
 ): void {
   if (error instanceof Error && error.name === "AbortError") {
     // Handle cancellation gracefully

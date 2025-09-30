@@ -20,7 +20,7 @@ describe("Chat Routes", () => {
       const body = JSON.parse(response.body);
       assert.strictEqual(
         body.answer,
-        "Mock response to: What are the REST API guidelines?",
+        "Mock response to: What are the REST API guidelines?"
       );
       assert.strictEqual(body.threadId, "thread-123");
       assert.ok(body.timestamp); // timestamp is what the schema provides
@@ -99,7 +99,7 @@ describe("Chat Routes", () => {
     try {
       // Override the mock to return thread history (should return array of messages)
       (fastify as any).chatService.getThreadHistory = async (
-        threadId: string,
+        threadId: string
       ) => [
         {
           id: "msg-1",

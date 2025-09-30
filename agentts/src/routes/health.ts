@@ -50,7 +50,7 @@ const healthRoutes: FastifyPluginAsyncTypebox = async function (fastify) {
           }
         } catch (error) {
           fastify.log.warn(
-            `Vector store health check failed: ${String(error)}`,
+            `Vector store health check failed: ${String(error)}`
           );
           vectorStoreStatus = "unhealthy";
         }
@@ -111,7 +111,7 @@ const healthRoutes: FastifyPluginAsyncTypebox = async function (fastify) {
           timestamp: new Date().toISOString(),
         };
       }
-    },
+    }
   );
 
   // Simple liveness probe (minimal overhead)
@@ -139,7 +139,7 @@ const healthRoutes: FastifyPluginAsyncTypebox = async function (fastify) {
         status: "alive",
         timestamp: new Date().toISOString(),
       };
-    },
+    }
   );
 
   // Readiness probe (checks if service can handle requests)
@@ -201,7 +201,7 @@ const healthRoutes: FastifyPluginAsyncTypebox = async function (fastify) {
           vectorStore: vectorStoreReady,
         },
       };
-    },
+    }
   );
 };
 

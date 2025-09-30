@@ -14,7 +14,7 @@ export const HealthResponseSchema = Type.Object({
     {
       description: "Overall health status",
       examples: ["healthy", "unhealthy", "degraded"],
-    },
+    }
   ),
   timestamp: Type.String({
     format: "date-time",
@@ -37,7 +37,7 @@ export const HealthResponseSchema = Type.Object({
           {
             description: "Vector store connection status",
             examples: ["healthy", "unhealthy"],
-          },
+          }
         ),
         provider: Type.String({
           description: "Vector store provider",
@@ -47,7 +47,7 @@ export const HealthResponseSchema = Type.Object({
           Type.Number({
             description: "Response time in milliseconds",
             examples: [25],
-          }),
+          })
         ),
       }),
       llm: Type.Object({
@@ -56,7 +56,7 @@ export const HealthResponseSchema = Type.Object({
           {
             description: "Language model service status",
             examples: ["healthy", "unhealthy"],
-          },
+          }
         ),
         provider: Type.String({
           description: "LLM provider",
@@ -66,19 +66,19 @@ export const HealthResponseSchema = Type.Object({
           Type.String({
             description: "Model being used",
             examples: ["gpt-4"],
-          }),
+          })
         ),
         responseTime: Type.Optional(
           Type.Number({
             description: "Response time in milliseconds",
             examples: [150],
-          }),
+          })
         ),
       }),
     },
     {
       description: "Status of individual services",
-    },
+    }
   ),
 });
 

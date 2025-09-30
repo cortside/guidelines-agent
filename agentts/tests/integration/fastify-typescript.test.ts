@@ -25,7 +25,7 @@ describe("Fastify TypeScript Integration", () => {
       },
       async (request, reply) => {
         return { message: "TypeScript integration working", status: "success" };
-      },
+      }
     );
 
     const response = await fastify.inject({
@@ -83,7 +83,7 @@ describe("Fastify TypeScript Integration", () => {
         const { threadId, message } = body;
         const chatService = (fastify as any).mockChatService;
         return await chatService.processMessage(threadId, message);
-      },
+      }
     );
 
     const response = await fastify.inject({
@@ -122,7 +122,7 @@ describe("Fastify TypeScript Integration", () => {
       },
       async (request, reply) => {
         return { success: true };
-      },
+      }
     );
 
     // Test missing required field

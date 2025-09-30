@@ -52,7 +52,7 @@ export class MCPHttpServer {
             listChanged: true,
           },
         },
-      },
+      }
     );
 
     // Handle tools/list requests
@@ -93,7 +93,7 @@ export class MCPHttpServer {
       try {
         const result = await this.restApiTool.execute(
           this.chatService,
-          args as { format?: "streaming" | "complete" },
+          args as { format?: "streaming" | "complete" }
         );
 
         // Check if result is streaming (AsyncIterable)
@@ -154,7 +154,7 @@ export class MCPHttpServer {
    */
   async handleHttpRequest(
     request: MCPHttpRequest,
-    reply: MCPHttpReply,
+    reply: MCPHttpReply
   ): Promise<void> {
     try {
       console.log("MCP Server: Received HTTP request");
@@ -179,7 +179,7 @@ export class MCPHttpServer {
         // Set up transport cleanup
         transport.onclose = () => {
           console.log(
-            `MCP Server: Transport closed for session ${newSessionId}`,
+            `MCP Server: Transport closed for session ${newSessionId}`
           );
           this.transports.delete(newSessionId);
         };
@@ -232,7 +232,7 @@ export class MCPHttpServer {
    */
   async handleSessionTermination(
     request: MCPHttpRequest,
-    reply: MCPHttpReply,
+    reply: MCPHttpReply
   ): Promise<void> {
     const sessionId = request.headers["mcp-session-id"] as string;
 
@@ -273,7 +273,7 @@ export class MCPHttpServer {
       },
       async (request: MCPHttpRequest, reply: MCPHttpReply) => {
         await this.handleHttpRequest(request, reply);
-      },
+      }
     );
 
     // DELETE /mcp - Handle session termination
@@ -281,7 +281,7 @@ export class MCPHttpServer {
       "/mcp",
       async (request: MCPHttpRequest, reply: MCPHttpReply) => {
         await this.handleSessionTermination(request, reply);
-      },
+      }
     );
 
     // GET /mcp - Optional health check for MCP endpoint
@@ -297,7 +297,7 @@ export class MCPHttpServer {
           toolName: this.restApiTool.name,
           toolDescription: this.restApiTool.description,
         });
-      },
+      }
     );
 
     console.log("✅ MCP HTTP routes registered successfully");
@@ -326,7 +326,7 @@ export class MCPHttpServer {
       this.isRunning = true;
       console.log("✅ MCP HTTP Server started successfully");
       console.log(
-        `   MCP endpoints available at http://${config.mcp.host}:${config.port}/mcp`,
+        `   MCP endpoints available at http://${config.mcp.host}:${config.port}/mcp`
       );
     } catch (error) {
       console.error("❌ Failed to start MCP HTTP Server:", error);

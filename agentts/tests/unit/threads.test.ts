@@ -100,7 +100,7 @@ describe("Threads Routes", () => {
       // Override the mock to return success for update
       (fastify as any).threadService.updateThreadName = (
         id: string,
-        name: string,
+        name: string
       ) => true;
 
       // Also mock getAllThreads to return the updated thread
