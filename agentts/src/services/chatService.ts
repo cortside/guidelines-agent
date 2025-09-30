@@ -321,41 +321,18 @@ export class ChatService {
 
       console.log('LangGraph stream created, starting iteration...'); // Debug logging
 
-      // Add timeout to prevent hanging
+      // Add timeout to prevent hanging - increased to 30 seconds for document processing
       let streamCompleted = false;
       const streamTimeout = setTimeout(() => {
         if (!streamCompleted) {
-          console.log('Stream timeout reached, completing with fallback response');
-          writeEvent('step', {
-            step: 'Generating response...',
+          console.log('Stream timeout reached after 30 seconds - this indicates a problem with LangGraph execution');
+          writeEvent('error', {
+            error: 'Request timeout - please try again',
             timestamp: new Date().toISOString()
           });
-          
-          // Send fallback response
-          const fallbackResponse = "I'm here to help! How can I assist you today?";
-          const chunks = this.splitIntoChunks(fallbackResponse, 5);
-          chunks.forEach((chunk, index) => {
-            setTimeout(() => {
-              writeEvent('token', {
-                content: chunk,
-                timestamp: new Date().toISOString()
-              });
-              
-              // Send complete event after last chunk
-              if (index === chunks.length - 1) {
-                setTimeout(() => {
-                  writeEvent('complete', {
-                    message: 'Stream completed (timeout fallback)',
-                    finalContent: fallbackResponse,
-                    timestamp: new Date().toISOString()
-                  });
-                  streamCompleted = true;
-                }, 100);
-              }
-            }, index * 100);
-          });
+          streamCompleted = true;
         }
-      }, 5000);
+      }, 30000);
 
       let chunkCount = 0;
       try {
@@ -396,14 +373,17 @@ export class ChatService {
                   step: currentStep,
                   timestamp: new Date().toISOString()
                 });
-              } else if (latestMessage._getType() === 'ai') {
+              } else if (latestMessage._getType() === 'ai' && messageContent) {
                 // This is AI response content - send incremental updates
                 console.log('AI message detected, accumulated:', accumulatedContent.length, 'new:', messageContent.length); // Debug logging
-                if (messageContent !== accumulatedContent) {
+                
+                // Check if this is new content (different from accumulated)
+                if (messageContent !== accumulatedContent && messageContent.length > 0) {
                   const newContent = messageContent.slice(accumulatedContent.length);
-                  if (newContent) {
-                    console.log('Sending new content:', newContent); // Debug logging
-                    // For better streaming effect, split longer content into smaller chunks
+                  if (newContent && newContent.trim().length > 0) {
+                    console.log('Sending new content:', newContent.substring(0, 50) + '...'); // Debug logging (truncated)
+                    
+                    // Send the new content in chunks for streaming effect
                     const chunks = this.splitIntoChunks(newContent, 10);
                     for (const chunk of chunks) {
                       writeEvent('token', {
@@ -411,10 +391,15 @@ export class ChatService {
                         timestamp: new Date().toISOString()
                       });
                       // Small delay between chunks for visual effect
-                      await new Promise(resolve => setTimeout(resolve, 50));
+                      await new Promise(resolve => setTimeout(resolve, 30));
                     }
                     accumulatedContent = messageContent;
                   }
+                }
+                
+                // If we have complete content and it looks like a final response, we can prepare to complete
+                if (messageContent.length > 50 && !messageContent.includes('searching') && !messageContent.includes('retrieving')) {
+                  console.log('Complete AI response detected, length:', messageContent.length);
                 }
               } else {
                 // Handle other message types - send as step updates
@@ -436,27 +421,22 @@ export class ChatService {
         if (!streamCompleted) {
           streamCompleted = true;
           
-          // If no content was accumulated, send some test content
+          // If no AI content was accumulated, there might be an issue with the workflow
           if (!accumulatedContent) {
-            console.log('No accumulated content, sending test response'); // Debug logging
-            const testResponse = "Hello! I'm your AI assistant. How can I help you today?";
-            const chunks = this.splitIntoChunks(testResponse, 5);
-            for (const chunk of chunks) {
-              writeEvent('token', {
-                content: chunk,
-                timestamp: new Date().toISOString()
-              });
-              await new Promise(resolve => setTimeout(resolve, 100));
-            }
-            accumulatedContent = testResponse;
+            console.log('Warning: No AI response content was generated from LangGraph workflow');
+            writeEvent('error', {
+              error: 'No response generated - please try rephrasing your question',
+              details: 'The AI workflow completed but did not produce a response',
+              timestamp: new Date().toISOString()
+            });
+          } else {
+            // Send completion event with the actual AI response
+            writeEvent('complete', {
+              message: 'Stream completed successfully',
+              finalContent: accumulatedContent,
+              timestamp: new Date().toISOString()
+            });
           }
-
-          // Send completion event
-          writeEvent('complete', {
-            message: 'Stream completed',
-            finalContent: accumulatedContent,
-            timestamp: new Date().toISOString()
-          });
         }
       } catch (error) {
         console.error('Error in LangGraph streaming:', error);
