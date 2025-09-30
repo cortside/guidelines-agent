@@ -106,19 +106,36 @@ async function processStreamResponse(
 ): Promise<void> {
   const reader = body.getReader();
   const decoder = new TextDecoder();
+  let buffer = ''; // Buffer for incomplete chunks
 
   try {
     while (true) {
       const { done, value } = await reader.read();
       
       if (done) {
+        // Process any remaining buffer content
+        if (buffer.trim()) {
+          processSSEChunk(buffer, onEvent, resolve, reject);
+        }
         resolve();
         break;
       }
 
-      // Process SSE chunk
+      // Decode and append to buffer
       const chunk = decoder.decode(value, { stream: true });
-      processSSEChunk(chunk, onEvent, resolve, reject);
+      buffer += chunk;
+      
+      // Process complete events (events end with double newline)
+      const events = buffer.split('\n\n');
+      // Keep the last incomplete event in buffer
+      buffer = events.pop() || '';
+      
+      // Process complete events
+      for (const event of events) {
+        if (event.trim()) {
+          processSSEChunk(event + '\n\n', onEvent, resolve, reject);
+        }
+      }
     }
   } catch (error) {
     reader.releaseLock();
@@ -134,32 +151,44 @@ function processSSEChunk(
   reject: (error: Error) => void
 ): void {
   const lines = chunk.split('\n');
+  let currentEventType = 'message';
+
+  console.log('Processing SSE chunk:', chunk); // Debug logging
 
   for (const line of lines) {
-    if (line.startsWith('data: ')) {
+    const trimmedLine = line.trim();
+    if (trimmedLine.startsWith('event: ')) {
+      currentEventType = trimmedLine.slice(7).trim();
+      console.log('Event type:', currentEventType); // Debug logging
+    } else if (trimmedLine.startsWith('data: ')) {
       try {
-        const eventData = JSON.parse(line.slice(6).trim());
+        const dataStr = trimmedLine.slice(6).trim();
+        console.log('Event data:', dataStr); // Debug logging
+        const eventData = JSON.parse(dataStr);
         const event: StreamEvent = {
-          type: eventData.type || 'token',
+          type: currentEventType as StreamEvent['type'],
           data: eventData,
           timestamp: eventData.timestamp || new Date().toISOString()
         };
         
+        console.log('Emitting event:', event); // Debug logging
         onEvent(event);
 
         // Handle stream completion
         if (event.type === 'complete') {
+          console.log('Stream completed'); // Debug logging
           resolve();
           return;
         }
         
         // Handle stream errors
         if (event.type === 'error') {
+          console.log('Stream error:', eventData.error); // Debug logging
           reject(new Error(eventData.error || 'Stream error occurred'));
           return;
         }
       } catch (parseError) {
-        console.warn('Failed to parse SSE data:', line, parseError);
+        console.warn('Failed to parse SSE data:', trimmedLine, parseError);
       }
     }
   }

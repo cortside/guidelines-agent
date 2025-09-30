@@ -16,7 +16,6 @@ export function ChatPage({ conversationId, onMessageComplete }: Readonly<{
 }>) {
   const { 
     messages, 
-    send, 
     sendStreaming,
     cancelStreaming,
     loading, 
@@ -26,7 +25,6 @@ export function ChatPage({ conversationId, onMessageComplete }: Readonly<{
     clearError: clearApiError 
   } = useChatApi(conversationId, onMessageComplete);
   const [input, setInput] = useState('');
-  const [useStreaming, setUseStreaming] = useState(false);
   const historyRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const prevInputRef = useRef(input);
@@ -64,11 +62,7 @@ export function ChatPage({ conversationId, onMessageComplete }: Readonly<{
     clearApiError();
     
     const result = await handleAsyncError(async () => {
-      if (useStreaming) {
-        await sendStreaming(trimmedInput);
-      } else {
-        await send(trimmedInput);
-      }
+      await sendStreaming(trimmedInput);
     });
     
     if (result !== null) {
@@ -86,7 +80,7 @@ export function ChatPage({ conversationId, onMessageComplete }: Readonly<{
 
   const handleRetry = async () => {
     if (prevInputRef.current) {
-      await retry(() => send(prevInputRef.current));
+      await retry(() => sendStreaming(prevInputRef.current));
     }
   };
 
@@ -150,8 +144,6 @@ export function ChatPage({ conversationId, onMessageComplete }: Readonly<{
           onCancel={handleCancel}
           loading={loading} 
           textareaRef={textareaRef}
-          useStreaming={useStreaming}
-          setUseStreaming={setUseStreaming}
           streamingState={streamingState}
         />
       </footer>

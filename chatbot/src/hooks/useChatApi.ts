@@ -242,6 +242,15 @@ export function useChatApi(conversationId: string, onMessageComplete?: () => voi
         input,
         (event: StreamEvent) => {
           switch (event.type) {
+            case 'start': {
+              const message = event.data.message || 'Stream started';
+              setStreamingState(prev => ({
+                ...prev,
+                currentStep: message
+              }));
+              updateMessageStep(message);
+              break;
+            }
             case 'step': {
               const step = event.data.step || event.data.message || 'Processing...';
               setStreamingState(prev => ({
@@ -255,6 +264,7 @@ export function useChatApi(conversationId: string, onMessageComplete?: () => voi
               const content = event.data.content || '';
               setStreamingState(prev => {
                 const newContent = prev.accumulatedContent + content;
+                // Update message content immediately with new accumulated content
                 updateMessageContent(newContent);
                 return {
                   ...prev,

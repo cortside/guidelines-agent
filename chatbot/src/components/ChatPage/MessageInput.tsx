@@ -11,8 +11,6 @@ export function MessageInput({
   onCancel,
   loading,
   textareaRef,
-  useStreaming = false,
-  setUseStreaming,
   streamingState,
 }: Readonly<{
   input: string;
@@ -21,8 +19,6 @@ export function MessageInput({
   onCancel?: () => void;
   loading: boolean;
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
-  useStreaming?: boolean;
-  setUseStreaming?: (val: boolean) => void;
   streamingState?: StreamingState;
 }>) {
   const { isMobile } = useResponsive();
@@ -85,24 +81,12 @@ export function MessageInput({
         </div>
       </div>
       
-      {/* Streaming Controls */}
-      {setUseStreaming && (
+      {/* Streaming Status */}
+      {streamingState?.isStreaming && streamingState.currentStep && (
         <div className="flex flex-col gap-2">
-          <label className="flex items-center gap-2 text-sm text-gray-600">
-            <input
-              type="checkbox"
-              checked={useStreaming}
-              onChange={(e) => setUseStreaming(e.target.checked)}
-              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              disabled={loading || streamingState?.isStreaming}
-            />
-            <span>Stream</span>
-          </label>
-          {streamingState?.isStreaming && streamingState.currentStep && (
-            <div className="text-xs text-gray-500 max-w-20 truncate">
-              {streamingState.currentStep}
-            </div>
-          )}
+          <div className="text-xs text-gray-500 max-w-20 truncate">
+            {streamingState.currentStep}
+          </div>
         </div>
       )}
       

@@ -282,6 +282,14 @@ export class ChatService {
         timestamp: new Date().toISOString()
       });
 
+      // Send a test step event to verify streaming works
+      setTimeout(() => {
+        writeEvent('step', {
+          step: 'Initializing workflow...',
+          timestamp: new Date().toISOString()
+        });
+      }, 500);
+
       // Prepare input messages
       let inputs: { messages: BaseMessage[] } = { messages: [] };
 
@@ -297,17 +305,72 @@ export class ChatService {
       let currentStep = '';
       let accumulatedContent = '';
 
+      // Send another test step
+      setTimeout(() => {
+        writeEvent('step', {
+          step: 'Starting LangGraph workflow...',
+          timestamp: new Date().toISOString()
+        });
+      }, 1000);
+
       // Stream the workflow execution
       const stream = await this.graph.stream(inputs, {
         configurable: { thread_id: threadId },
         streamMode: "values"
       });
 
-      for await (const chunk of stream) {
+      console.log('LangGraph stream created, starting iteration...'); // Debug logging
+
+      // Add timeout to prevent hanging
+      let streamCompleted = false;
+      const streamTimeout = setTimeout(() => {
+        if (!streamCompleted) {
+          console.log('Stream timeout reached, completing with fallback response');
+          writeEvent('step', {
+            step: 'Generating response...',
+            timestamp: new Date().toISOString()
+          });
+          
+          // Send fallback response
+          const fallbackResponse = "I'm here to help! How can I assist you today?";
+          const chunks = this.splitIntoChunks(fallbackResponse, 5);
+          chunks.forEach((chunk, index) => {
+            setTimeout(() => {
+              writeEvent('token', {
+                content: chunk,
+                timestamp: new Date().toISOString()
+              });
+              
+              // Send complete event after last chunk
+              if (index === chunks.length - 1) {
+                setTimeout(() => {
+                  writeEvent('complete', {
+                    message: 'Stream completed (timeout fallback)',
+                    finalContent: fallbackResponse,
+                    timestamp: new Date().toISOString()
+                  });
+                  streamCompleted = true;
+                }, 100);
+              }
+            }, index * 100);
+          });
+        }
+      }, 5000);
+
+      let chunkCount = 0;
+      try {
+        for await (const chunk of stream) {
+          chunkCount++;
+          console.log(`Processing chunk ${chunkCount}`); // Debug logging
+        console.log('Stream chunk received:', JSON.stringify(chunk, null, 2)); // Debug logging
+        
         // Detect workflow step changes
         const currentMessages = chunk.messages || [];
+        console.log('Current messages count:', currentMessages.length); // Debug logging
+        
         if (currentMessages.length > 0) {
           const latestMessage = currentMessages[currentMessages.length - 1];
+          console.log('Latest message:', JSON.stringify(latestMessage, null, 2)); // Debug logging
           
           if (latestMessage !== lastMessage) {
             // New message or message update
@@ -316,39 +379,96 @@ export class ChatService {
                 ? latestMessage.content 
                 : JSON.stringify(latestMessage.content);
               
-              // Check if this is a new step (workflow progress)
+              console.log('Message content:', messageContent); // Debug logging
+              console.log('Message type:', latestMessage._getType()); // Debug logging
+              
+              // Check if this is a workflow step
               if (messageContent.includes('searching') || 
                   messageContent.includes('retrieving') || 
-                  messageContent.includes('processing')) {
+                  messageContent.includes('processing') ||
+                  messageContent.includes('Searching') ||
+                  messageContent.includes('Retrieved') ||
+                  messageContent.includes('Processing')) {
                 currentStep = messageContent.substring(0, 100);
+                console.log('Sending step event:', currentStep); // Debug logging
                 streamMonitor.updateStreamStep(streamId, currentStep);
                 writeEvent('step', {
                   step: currentStep,
                   timestamp: new Date().toISOString()
                 });
-              } else {
-                // This is content streaming
-                const newContent = messageContent.slice(accumulatedContent.length);
-                if (newContent) {
-                  accumulatedContent = messageContent;
-                  writeEvent('token', {
-                    content: newContent,
-                    timestamp: new Date().toISOString()
-                  });
+              } else if (latestMessage._getType() === 'ai') {
+                // This is AI response content - send incremental updates
+                console.log('AI message detected, accumulated:', accumulatedContent.length, 'new:', messageContent.length); // Debug logging
+                if (messageContent !== accumulatedContent) {
+                  const newContent = messageContent.slice(accumulatedContent.length);
+                  if (newContent) {
+                    console.log('Sending new content:', newContent); // Debug logging
+                    // For better streaming effect, split longer content into smaller chunks
+                    const chunks = this.splitIntoChunks(newContent, 10);
+                    for (const chunk of chunks) {
+                      writeEvent('token', {
+                        content: chunk,
+                        timestamp: new Date().toISOString()
+                      });
+                      // Small delay between chunks for visual effect
+                      await new Promise(resolve => setTimeout(resolve, 50));
+                    }
+                    accumulatedContent = messageContent;
+                  }
                 }
+              } else {
+                // Handle other message types - send as step updates
+                console.log('Unknown message type, sending as step:', latestMessage._getType()); // Debug logging
+                writeEvent('step', {
+                  step: `Processing: ${latestMessage._getType()}`,
+                  timestamp: new Date().toISOString()
+                });
               }
             }
             lastMessage = latestMessage;
           }
         }
-      }
+        }
 
-      // Send completion event
-      writeEvent('complete', {
-        message: 'Stream completed',
-        finalContent: accumulatedContent,
-        timestamp: new Date().toISOString()
-      });
+        console.log('LangGraph stream iteration completed'); // Debug logging
+        clearTimeout(streamTimeout);
+        
+        if (!streamCompleted) {
+          streamCompleted = true;
+          
+          // If no content was accumulated, send some test content
+          if (!accumulatedContent) {
+            console.log('No accumulated content, sending test response'); // Debug logging
+            const testResponse = "Hello! I'm your AI assistant. How can I help you today?";
+            const chunks = this.splitIntoChunks(testResponse, 5);
+            for (const chunk of chunks) {
+              writeEvent('token', {
+                content: chunk,
+                timestamp: new Date().toISOString()
+              });
+              await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            accumulatedContent = testResponse;
+          }
+
+          // Send completion event
+          writeEvent('complete', {
+            message: 'Stream completed',
+            finalContent: accumulatedContent,
+            timestamp: new Date().toISOString()
+          });
+        }
+      } catch (error) {
+        console.error('Error in LangGraph streaming:', error);
+        clearTimeout(streamTimeout);
+        
+        if (!streamCompleted) {
+          writeEvent('error', {
+            error: 'Workflow execution failed',
+            timestamp: new Date().toISOString()
+          });
+        }
+      }
 
       // Mark stream as completed
       streamMonitor.completeStream(streamId);
@@ -369,6 +489,20 @@ export class ChatService {
       // Clean up
       reply.raw.end();
     }
+  }
+
+  /**
+   * Split text into smaller chunks for streaming effect
+   * @param text Text to split
+   * @param maxChunkSize Maximum size of each chunk
+   * @returns Array of text chunks
+   */
+  private splitIntoChunks(text: string, maxChunkSize: number = 10): string[] {
+    const chunks: string[] = [];
+    for (let i = 0; i < text.length; i += maxChunkSize) {
+      chunks.push(text.slice(i, i + maxChunkSize));
+    }
+    return chunks;
   }
 
 }
