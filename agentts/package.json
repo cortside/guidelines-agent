@@ -32,8 +32,8 @@
   },
   "scripts": {
     "build": "npx tsc --noEmit",
-    "start": "npx tsx src/fastify-main.ts",
-    "dev": "node --loader ts-node/esm src/fastify-main.ts",
+    "start": "npx tsx src/main.ts",
+    "dev": "node --loader ts-node/esm src/main.ts",
     "lint": "eslint . --ext .ts,.tsx",
     "test": "npx tsx --test tests/**/*.test.ts",
     "test:unit": "npx tsx --test tests/unit/**/*.test.ts",

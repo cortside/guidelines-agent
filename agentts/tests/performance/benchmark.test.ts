@@ -12,7 +12,7 @@ describe('Performance Benchmarks', () => {
       initialize: async () => {}
     } as any);
     
-    await fastify.register(import('../../src/fastify-routes/health.js'));
+    await fastify.register(import('../../src/routes/health.ts'));
     
     const start = process.hrtime.bigint();
     const response = await fastify.inject({
@@ -31,7 +31,7 @@ describe('Performance Benchmarks', () => {
 
   test('Liveness probe should respond within 10ms', async (t) => {
     const fastify = Fastify({ logger: false }).withTypeProvider<TypeBoxTypeProvider>();
-    await fastify.register(import('../../src/fastify-routes/health.js'));
+    await fastify.register(import('../../src/routes/health.ts'));
     
     const start = process.hrtime.bigint();
     const response = await fastify.inject({
@@ -55,7 +55,7 @@ describe('Performance Benchmarks', () => {
       initialize: async () => {}
     } as any);
     
-    await fastify.register(import('../../src/fastify-routes/health.js'));
+    await fastify.register(import('../../src/routes/health.ts'));
     
     const concurrentRequests = 50;
     const promises = Array.from({ length: concurrentRequests }, () =>
@@ -93,7 +93,7 @@ describe('Performance Benchmarks', () => {
     };
     
     fastify.decorate('chatService', mockChatService as any);
-    await fastify.register(import('../../src/fastify-routes/chat.js'));
+    await fastify.register(import('../../src/routes/chat.ts'));
     
     const iterations = 10;
     const times: number[] = [];
@@ -147,7 +147,7 @@ describe('Performance Benchmarks', () => {
     };
     
     fastify.decorate('threadService', mockThreadService as any);
-    await fastify.register(import('../../src/fastify-routes/threads.js'));
+    await fastify.register(import('../../src/routes/threads.ts'));
     
     // Test GET /threads performance with large dataset
     const start = process.hrtime.bigint();
@@ -175,7 +175,7 @@ describe('Performance Benchmarks', () => {
       initialize: async () => {}
     } as any);
     
-    await fastify.register(import('../../src/fastify-routes/health.js'));
+    await fastify.register(import('../../src/routes/health.ts'));
     
     const initialMemory = process.memoryUsage().heapUsed;
     
@@ -212,7 +212,7 @@ describe('Performance Benchmarks', () => {
     };
     
     fastify.decorate('chatService', mockChatService as any);
-    await fastify.register(import('../../src/fastify-routes/chat.js'));
+    await fastify.register(import('../../src/routes/chat.ts'));
     
     const response = await fastify.inject({
       method: 'POST',

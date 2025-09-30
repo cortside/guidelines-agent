@@ -2,8 +2,8 @@ import Fastify from 'fastify';
 import { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
 import { config } from './config/index.ts';
 import { ChatService } from './services/chatService.ts';
-import { fastifyErrorHandler } from './fastify-plugins/errorHandler.ts';
-import validationPlugin from './fastify-plugins/validation.ts';
+import { fastifyErrorHandler } from './plugins/errorHandler.ts';
+import validationPlugin from './plugins/validation.ts';
 
 const fastify = Fastify({ 
   logger: {
@@ -137,9 +137,9 @@ async function startServer() {
     });
 
     // Register route plugins
-    await fastify.register(import('./fastify-routes/health.ts'));
-    await fastify.register(import('./fastify-routes/chat.ts'));
-    await fastify.register(import('./fastify-routes/threads.ts'));
+    await fastify.register(import('./routes/health.ts'));
+    await fastify.register(import('./routes/chat.ts'));
+    await fastify.register(import('./routes/threads.ts'));
 
     // Register MCP HTTP Server routes if enabled (BEFORE server starts)
     let mcpServer: any = null;

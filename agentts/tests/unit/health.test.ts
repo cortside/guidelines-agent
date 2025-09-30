@@ -2,7 +2,7 @@ import { test, describe } from 'node:test';
 import assert from 'node:assert';
 import Fastify from 'fastify';
 import { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
-import healthRoutes from '../../src/fastify-routes/health.ts';
+import healthRoutes from '../../src/routes/health.ts';
 import { createMockChatService } from '../testUtils.ts';
 
 describe('Health Routes', () => {

@@ -2,8 +2,8 @@ import Fastify from 'fastify';
 import type { FastifyInstance } from 'fastify';
 import { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
 import { createMockChatService } from './testUtils.ts';
-import { fastifyErrorHandler } from '../src/fastify-plugins/errorHandler.ts';
-import validationPlugin from '../src/fastify-plugins/validation.ts';
+import { fastifyErrorHandler } from '../src/plugins/errorHandler.ts';
+import validationPlugin from '../src/plugins/validation.ts';
 
 /**
  * Create a properly configured Fastify instance for testing
@@ -63,9 +63,9 @@ export async function createTestFastifyInstance(): Promise<FastifyInstance> {
     });
 
     // Register route plugins  
-    await fastify.register(import('../src/fastify-routes/health.ts'));
-    await fastify.register(import('../src/fastify-routes/chat.ts'));
-    await fastify.register(import('../src/fastify-routes/threads.ts'));
+    await fastify.register(import('../src/routes/health.ts'));
+    await fastify.register(import('../src/routes/chat.ts'));
+    await fastify.register(import('../src/routes/threads.ts'));
 
     // Ensure the instance is ready
     await fastify.ready();
@@ -88,7 +88,7 @@ export async function createMinimalTestFastifyInstance(): Promise<FastifyInstanc
   fastify.decorate('chatService', createMockChatService() as any);
   
   // Register only health routes for minimal testing
-  await fastify.register(import('../src/fastify-routes/health.ts'));
+  await fastify.register(import('../src/routes/health.ts'));
   await fastify.ready();
   
   return fastify;
