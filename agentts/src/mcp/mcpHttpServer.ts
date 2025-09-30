@@ -8,9 +8,9 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { CallToolRequestSchema, ListToolsRequestSchema, isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
-import { ChatService } from '../services/chatService.js';
-import { RestApiStandardsTool } from './tools/restApiStandards.js';
-import { config } from '../config/index.js';
+import { ChatService } from '../services/chatService.ts';
+import { RestApiStandardsTool } from './tools/restApiStandards.ts';  
+import { config } from '../config/index.ts';
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 
 interface MCPHttpRequest extends FastifyRequest {

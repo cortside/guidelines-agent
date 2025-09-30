@@ -21,12 +21,10 @@
     "fastify": "^4.24.3",
     "langchain": "^0.3.31",
     "ws": "^8.18.3",
-    "yamljs": "^0.3.0",
     "zod": "^3.25.76"
   },
   "devDependencies": {
     "@types/node": "^20.19.17",
-    "@types/yamljs": "^0.2.34",
     "eslint": "^8.56.0",
     "ts-node": "^10.9.2",
     "tsx": "^4.20.6",
