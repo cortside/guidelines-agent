@@ -1,9 +1,10 @@
 [
   {
-    "threadId": "thread-1759207939856-rzla5ni4q",
-    "name": "Conversation",
-    "createdAt": "2025-09-30T04:52:19.856Z",
-    "lastActivity": "2025-09-30T04:52:19.856Z",
-    "messageCount": 0
+    "threadId": "mcp-1759211961570-q85asfkcv",
+    "name": "Key Features Expected Standards",
+    "createdAt": "2025-09-30T05:59:21.571Z",
+    "lastActivity": "2025-09-30T05:59:29.698Z",
+    "messageCount": 1,
+    "firstMessage": "What are the key features and expected standards of a restful api?"
   }
 ]

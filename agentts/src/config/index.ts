@@ -66,6 +66,16 @@ Helpful Answer:`
     rankedDocuments: z.number().min(1).default(7),
     similarityThreshold: z.number().min(0).max(1).optional(),
   }),
+
+  // MCP Server Configuration
+  mcp: z.object({
+    enabled: z.boolean().default(true),
+    port: z.number().min(1).max(65535).default(8003),
+    host: z.string().default("localhost"),
+    toolName: z.string().default("rest-api-standards"),
+    toolDescription: z.string().default("Get comprehensive information about REST API features and expected standards"),
+    predefinedQuery: z.string().default("What are the key features and expected standards of a restful api?"),
+  }),
   
   // Environment
   nodeEnv: z.enum(["development", "production", "test"]).default("development"),
@@ -131,6 +141,15 @@ class ConfigManager {
         similarityThreshold: process.env.RETRIEVAL_SIMILARITY_THRESHOLD 
           ? parseFloat(process.env.RETRIEVAL_SIMILARITY_THRESHOLD) 
           : undefined,
+      },
+
+      mcp: {
+        enabled: process.env.MCP_ENABLED !== "false",
+        port: parseInt(process.env.MCP_PORT || "8003"),
+        host: process.env.MCP_HOST || "localhost",
+        toolName: process.env.MCP_TOOL_NAME || "rest-api-standards",
+        toolDescription: process.env.MCP_TOOL_DESCRIPTION || "Get comprehensive information about REST API features and expected standards",
+        predefinedQuery: process.env.MCP_PREDEFINED_QUERY || "What are the key features and expected standards of a restful api?",
       },
       
       nodeEnv: process.env.NODE_ENV || "development",

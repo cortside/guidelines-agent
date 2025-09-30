@@ -141,6 +141,26 @@ async function startServer() {
     await fastify.register(import('./fastify-routes/chat.ts'));
     await fastify.register(import('./fastify-routes/threads.ts'));
 
+    // Register MCP HTTP Server routes if enabled (BEFORE server starts)
+    let mcpServer: any = null;
+    if (config.mcp.enabled) {
+      try {
+        console.log('\n🔗 Setting up MCP HTTP Server...');
+        const { MCPHttpServer } = await import('./mcp/mcpHttpServer.ts');
+        mcpServer = new MCPHttpServer(chatService);
+        await mcpServer.start(fastify);
+        console.log('✅ MCP HTTP routes registered successfully!');
+        console.log(`   • Tool: ${config.mcp.toolName}`);
+        console.log(`   • Description: ${config.mcp.toolDescription}`);
+        console.log(`   • Transport: HTTP with streaming`);
+      } catch (mcpError) {
+        console.error('❌ Failed to setup MCP HTTP Server:', mcpError);
+        console.log('Continuing with Fastify server only...');
+      }
+    } else {
+      console.log('📋 MCP HTTP Server disabled in configuration');
+    }
+
     // Temporary root route for testing
     fastify.get('/', async (request, reply) => {
       return {
@@ -163,13 +183,24 @@ async function startServer() {
     console.log(`   • Alternative Docs: http://localhost:${config.port}/docs`);
     console.log(`   • JSON Spec: http://localhost:${config.port}/api-docs.json`);
     console.log(`   • YAML Spec: http://localhost:${config.port}/api-docs.yaml`);
+    
+    if (mcpServer?.isServerRunning()) {
+      console.log(`   • MCP Endpoints: http://localhost:${config.port}/mcp`);
+    }
 
     // Graceful shutdown
     const gracefulShutdown = async (signal: string) => {
       console.log(`${signal} received, shutting down gracefully...`);
       try {
+        // Stop MCP server first if it's running
+        if (mcpServer?.isServerRunning()) {
+          console.log('Stopping MCP Server...');
+          await mcpServer.stop();
+        }
+        
+        // Stop Fastify server
         await fastify.close();
-        console.log('Server closed successfully');
+        console.log('All servers closed successfully');
         process.exit(0);
       } catch (error) {
         console.error('Error during graceful shutdown:', error);
