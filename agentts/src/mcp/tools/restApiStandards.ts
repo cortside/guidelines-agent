@@ -188,30 +188,45 @@ export class RestApiStandardsTool implements MCPTool {
    */
   private createMockReply() {
     const eventBuffer: StreamEvent[] = [];
+    let currentEvent = '';
+    let accumulatedData = '';
     
     const mockReply = {
       raw: {
         writeHead: () => {},
         write: (data: string) => {
-          // Parse SSE data format
+          // Parse SSE data format line by line, handling multi-call scenarios
           const lines = data.split('\n');
-          let event = '';
-          let eventData = '';
           
           for (const line of lines) {
             if (line.startsWith('event: ')) {
-              event = line.substring(7);
+              // New event started, process any pending event first
+              if (currentEvent && accumulatedData) {
+                try {
+                  const parsedData = JSON.parse(accumulatedData);
+                  eventBuffer.push({ event: currentEvent, data: parsedData });
+                } catch (parseError) {
+                  console.warn('MCP Mock Reply: Failed to parse SSE data:', accumulatedData, parseError);
+                }
+              }
+              
+              // Start new event
+              currentEvent = line.substring(7);
+              accumulatedData = '';
             } else if (line.startsWith('data: ')) {
-              eventData = line.substring(6);
-            }
-          }
-          
-          if (event && eventData) {
-            try {
-              const parsedData = JSON.parse(eventData);
-              eventBuffer.push({ event, data: parsedData });
-            } catch (parseError) {
-              console.warn('Failed to parse SSE data:', eventData, parseError);
+              accumulatedData = line.substring(6);
+            } else if (line === '' && currentEvent && accumulatedData) {
+              // End of SSE event (blank line), process it
+              try {
+                const parsedData = JSON.parse(accumulatedData);
+                eventBuffer.push({ event: currentEvent, data: parsedData });
+              } catch (parseError) {
+                console.warn('MCP Mock Reply: Failed to parse SSE data:', accumulatedData, parseError);
+              }
+              
+              // Reset for next event
+              currentEvent = '';
+              accumulatedData = '';
             }
           }
         },
