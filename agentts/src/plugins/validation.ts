@@ -1,13 +1,12 @@
-import { FastifyPluginAsyncTypebox } from '@fastify/type-provider-typebox';
-import { Type } from '@sinclair/typebox';
-import { ValidationError } from './errorHandler.ts';
+import { FastifyPluginAsyncTypebox } from "@fastify/type-provider-typebox";
+import { Type } from "@sinclair/typebox";
+import { ValidationError } from "./errorHandler.ts";
 
 /**
  * Fastify plugin for custom validation logic beyond TypeBox schema validation.
  * This provides validation patterns similar to the Express validator middleware.
  */
 const validationPlugin: FastifyPluginAsyncTypebox = async function (fastify) {
-  
   // Custom validation utilities
   const validators = {
     /**
@@ -29,7 +28,9 @@ const validationPlugin: FastifyPluginAsyncTypebox = async function (fastify) {
 
       // Check for valid characters (alphanumeric, hyphens, underscores)
       if (!/^[a-zA-Z0-9_-]+$/.test(threadId)) {
-        throw new ValidationError("threadId must contain only alphanumeric characters, hyphens, and underscores");
+        throw new ValidationError(
+          "threadId must contain only alphanumeric characters, hyphens, and underscores",
+        );
       }
     },
 
@@ -50,8 +51,10 @@ const validationPlugin: FastifyPluginAsyncTypebox = async function (fastify) {
       }
 
       // Check for potentially harmful content patterns
-      if (message.includes('<script') || message.includes('javascript:')) {
-        throw new ValidationError("message contains potentially harmful content");
+      if (message.includes("<script") || message.includes("javascript:")) {
+        throw new ValidationError(
+          "message contains potentially harmful content",
+        );
       }
     },
 
@@ -79,7 +82,9 @@ const validationPlugin: FastifyPluginAsyncTypebox = async function (fastify) {
     validatePagination: (limit?: number, offset?: number): void => {
       if (limit !== undefined) {
         if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
-          throw new ValidationError("limit must be an integer between 1 and 100");
+          throw new ValidationError(
+            "limit must be an integer between 1 and 100",
+          );
         }
       }
 
@@ -88,73 +93,96 @@ const validationPlugin: FastifyPluginAsyncTypebox = async function (fastify) {
           throw new ValidationError("offset must be a non-negative integer");
         }
       }
-    }
+    },
   };
 
   // Register validators on fastify instance for use in routes
-  fastify.decorate('validators', validators);
+  fastify.decorate("validators", validators);
 
   // Pre-validation hook for enhanced validation
-  fastify.addHook('preValidation', async (request, reply) => {
+  fastify.addHook("preValidation", async (request, reply) => {
     // This hook runs before TypeBox validation
     // Can be used for custom pre-validation logic
-    
+
     // Example: Log validation attempts for monitoring
-    if (process.env.NODE_ENV === 'development') {
-      request.log.debug({
-        url: request.url,
-        method: request.method,
-        body: request.body,
-        params: request.params,
-        query: request.query
-      }, 'Validation starting');
+    if (process.env.NODE_ENV === "development") {
+      request.log.debug(
+        {
+          url: request.url,
+          method: request.method,
+          body: request.body,
+          params: request.params,
+          query: request.query,
+        },
+        "Validation starting",
+      );
     }
   });
 
   // Validation functions for different endpoint types
-  const validateChatEndpoint = (request: { method: string; url: string; body: unknown }) => {
-    if (request.method === 'POST' && request.url === '/chat') {
+  const validateChatEndpoint = (request: {
+    method: string;
+    url: string;
+    body: unknown;
+  }) => {
+    if (request.method === "POST" && request.url === "/chat") {
       const body = request.body as { threadId?: string; message?: string };
       if (body.threadId) validators.validateThreadId(body.threadId);
       if (body.message) validators.validateChatMessage(body.message);
     }
   };
 
-  const validateThreadEndpoints = (request: { method: string; url: string; body: unknown; params: unknown }) => {
+  const validateThreadEndpoints = (request: {
+    method: string;
+    url: string;
+    body: unknown;
+    params: unknown;
+  }) => {
     const { method, url } = request;
-    
-    if (method === 'POST' && url === '/threads') {
+
+    if (method === "POST" && url === "/threads") {
       const body = request.body as { name?: string };
       if (body.name) validators.validateThreadName(body.name);
     }
-    
-    if (method === 'PATCH' && url.startsWith('/threads/')) {
+
+    if (method === "PATCH" && url.startsWith("/threads/")) {
       const params = request.params as { threadId?: string };
       if (params.threadId) validators.validateThreadId(params.threadId);
-      
+
       const body = request.body as { name?: string };
       if (body.name !== undefined) validators.validateThreadName(body.name);
     }
-    
-    if ((method === 'GET' || method === 'DELETE') && url.startsWith('/threads/') && !url.endsWith('/stats')) {
+
+    if (
+      (method === "GET" || method === "DELETE") &&
+      url.startsWith("/threads/") &&
+      !url.endsWith("/stats")
+    ) {
       const params = request.params as { threadId?: string };
       if (params.threadId) validators.validateThreadId(params.threadId);
     }
   };
 
-  const validatePaginationEndpoints = (request: { method: string; url: string; query: unknown }) => {
+  const validatePaginationEndpoints = (request: {
+    method: string;
+    url: string;
+    query: unknown;
+  }) => {
     const { method, url } = request;
-    if (method === 'GET' && (url === '/threads' || url.startsWith('/threads?'))) {
+    if (
+      method === "GET" &&
+      (url === "/threads" || url.startsWith("/threads?"))
+    ) {
       const query = request.query as { limit?: number; offset?: number };
       validators.validatePagination(query.limit, query.offset);
     }
   };
 
   // Post-validation hook for custom validation
-  fastify.addHook('preHandler', async (request, reply) => {
+  fastify.addHook("preHandler", async (request, reply) => {
     // This hook runs after TypeBox validation but before route handler
     // Perfect place for custom business logic validation
-    
+
     validateChatEndpoint(request);
     validateThreadEndpoints(request);
     validatePaginationEndpoints(request);
@@ -163,17 +191,21 @@ const validationPlugin: FastifyPluginAsyncTypebox = async function (fastify) {
 
 // TypeBox schemas for validation responses
 export const ValidationErrorSchema = Type.Object({
-  error: Type.String({ description: 'Validation error message' }),
-  code: Type.Literal('VALIDATION_ERROR'),
-  timestamp: Type.String({ format: 'date-time' }),
-  field: Type.Optional(Type.String({ description: 'Field that failed validation' })),
-  value: Type.Optional(Type.Any({ description: 'Invalid value that was provided' }))
+  error: Type.String({ description: "Validation error message" }),
+  code: Type.Literal("VALIDATION_ERROR"),
+  timestamp: Type.String({ format: "date-time" }),
+  field: Type.Optional(
+    Type.String({ description: "Field that failed validation" }),
+  ),
+  value: Type.Optional(
+    Type.Any({ description: "Invalid value that was provided" }),
+  ),
 });
 
 export default validationPlugin;
 
 // Type augmentation for validators
-declare module 'fastify' {
+declare module "fastify" {
   interface FastifyInstance {
     validators: {
       validateThreadId: (threadId: string) => void;

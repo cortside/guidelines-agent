@@ -1,4 +1,4 @@
-import { FastifyError, FastifyRequest, FastifyReply } from 'fastify';
+import { FastifyError, FastifyRequest, FastifyReply } from "fastify";
 
 // Error classes - keeping the same structure but adapting for Fastify
 export class AppError extends Error {
@@ -44,7 +44,7 @@ export class ServiceError extends AppError {
 export async function fastifyErrorHandler(
   error: FastifyError,
   request: FastifyRequest,
-  reply: FastifyReply
+  reply: FastifyReply,
 ): Promise<void> {
   // Default error values
   let statusCode = 500;
@@ -56,14 +56,17 @@ export async function fastifyErrorHandler(
     statusCode = 400;
     code = "VALIDATION_ERROR";
     message = `Validation failed: ${error.message}`;
-    
+
     // Log validation errors for debugging
-    request.log.warn({
-      validation: error.validation,
-      url: request.url,
-      method: request.method,
-      body: request.body
-    }, 'Validation error occurred');
+    request.log.warn(
+      {
+        validation: error.validation,
+        url: request.url,
+        method: request.method,
+        body: request.body,
+      },
+      "Validation error occurred",
+    );
   }
   // Handle our custom operational errors
   else if (error instanceof AppError && error.isOperational) {
@@ -97,21 +100,24 @@ export async function fastifyErrorHandler(
   }
   // Log unexpected errors
   else {
-    request.log.error({
-      err: error,
-      url: request.url,
-      method: request.method,
-      body: request.body,
-      params: request.params,
-      query: request.query,
-    }, 'Unexpected error occurred');
+    request.log.error(
+      {
+        err: error,
+        url: request.url,
+        method: request.method,
+        body: request.body,
+        params: request.params,
+        query: request.query,
+      },
+      "Unexpected error occurred",
+    );
   }
 
   // Build error response
   const errorResponse: any = {
     error: message,
     code,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   };
 
   // Add development-only details
@@ -121,7 +127,7 @@ export async function fastifyErrorHandler(
       url: request.url,
       method: request.method,
       params: request.params,
-      query: request.query
+      query: request.query,
     };
   }
 
@@ -132,7 +138,7 @@ export async function fastifyErrorHandler(
 // Pre-handler hook for custom validation logic
 export async function validationPreHandler(
   request: FastifyRequest,
-  reply: FastifyReply
+  reply: FastifyReply,
 ): Promise<void> {
   // This can be used for custom validation logic that goes beyond TypeBox schemas
   // Currently just a placeholder for future enhancements
@@ -142,21 +148,24 @@ export async function validationPreHandler(
 export async function errorLoggingHook(
   request: FastifyRequest,
   reply: FastifyReply,
-  error: FastifyError
+  error: FastifyError,
 ): Promise<void> {
   // Enhanced error logging with request context
-  request.log.error({
-    err: error,
-    req: {
-      method: request.method,
-      url: request.url,
-      headers: request.headers,
-      params: request.params,
-      query: request.query,
-      body: request.body
+  request.log.error(
+    {
+      err: error,
+      req: {
+        method: request.method,
+        url: request.url,
+        headers: request.headers,
+        params: request.params,
+        query: request.query,
+        body: request.body,
+      },
+      res: {
+        statusCode: reply.statusCode,
+      },
     },
-    res: {
-      statusCode: reply.statusCode
-    }
-  }, 'Request error occurred');
+    "Request error occurred",
+  );
 }

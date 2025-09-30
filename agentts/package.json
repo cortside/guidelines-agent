@@ -26,6 +26,7 @@
   "devDependencies": {
     "@types/node": "^20.19.17",
     "eslint": "^8.56.0",
+    "prettier": "^3.0.0",
     "ts-node": "^10.9.2",
     "tsx": "^4.20.6",
     "typescript": "^5.6.3"
@@ -35,6 +36,8 @@
     "start": "npx tsx src/main.ts",
     "dev": "node --loader ts-node/esm src/main.ts",
     "lint": "eslint . --ext .ts,.tsx",
+    "format": "prettier --write \"src/**/*.{ts,js,json}\" \"tests/**/*.{ts,js,json}\" \"*.{ts,js,json}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,js,json}\" \"tests/**/*.{ts,js,json}\" \"*.{ts,js,json}\"",
     "test": "npx tsx --test tests/**/*.test.ts",
     "test:unit": "npx tsx --test tests/unit/**/*.test.ts",
     "test:integration": "npx tsx --test tests/integration/**/*.test.ts",

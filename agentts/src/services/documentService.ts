@@ -1,8 +1,8 @@
 import { Document } from "langchain/document";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { ChatOpenAI } from "@langchain/openai";
-import { config } from '../config/index.ts';
-import { createTagGenerationLLM } from '../infrastructure/llm.ts';
+import { config } from "../config/index.ts";
+import { createTagGenerationLLM } from "../infrastructure/llm.ts";
 
 export class DocumentService {
   private readonly llm: ChatOpenAI;
@@ -18,15 +18,20 @@ export class DocumentService {
       if (!response.ok) {
         throw new Error(`Failed to fetch ${url}: ${response.statusText}`);
       }
-      
+
       const text = await response.text();
-      
-      return [new Document({ 
-        pageContent: text, 
-        metadata: { 
-          source: url.replace('https://raw.githubusercontent.com/cortside/guidelines/refs/heads/master', '') 
-        } 
-      })];
+
+      return [
+        new Document({
+          pageContent: text,
+          metadata: {
+            source: url.replace(
+              "https://raw.githubusercontent.com/cortside/guidelines/refs/heads/master",
+              "",
+            ),
+          },
+        }),
+      ];
     } catch (error) {
       console.error(`Error loading document from ${url}:`, error);
       throw error;
@@ -42,18 +47,19 @@ There is no fixed taxonomy — generate the tags dynamically based on the conten
 Output only a comma-separated list of tags, with no extra text, explanations, or formatting.`;
 
     const prompt = `${metaTagPrompt}\n${content}`;
-    
+
     try {
       const response = await this.llm.invoke(prompt);
-      const tags = typeof response.content === "string"
-        ? response.content
-            .split(/,\s*/)
-            .map((tag: string) => tag.trim().toLowerCase())
-            .filter(Boolean)
-        : [];
+      const tags =
+        typeof response.content === "string"
+          ? response.content
+              .split(/,\s*/)
+              .map((tag: string) => tag.trim().toLowerCase())
+              .filter(Boolean)
+          : [];
 
       // Only add tags that are not already in allTags
-      const newTags = tags.filter(tag => !this.allTags.includes(tag));
+      const newTags = tags.filter((tag) => !this.allTags.includes(tag));
       this.allTags.push(...newTags);
 
       console.log(`Generated tags: ${tags.join(", ")}`);
@@ -67,7 +73,7 @@ Output only a comma-separated list of tags, with no extra text, explanations, or
 
   private async loadAllDocuments(urls: string[]): Promise<Document[]> {
     console.log(`Loading documents from URLs: ${urls.length}`);
-    
+
     // Load documents in parallel but with error handling for individual failures
     const documentPromises = urls.map(async (url) => {
       try {
@@ -77,9 +83,9 @@ Output only a comma-separated list of tags, with no extra text, explanations, or
         return [];
       }
     });
-    
+
     const docsArrays = await Promise.all(documentPromises);
-    const docs = docsArrays.flat().filter(doc => doc.pageContent.length > 0);
+    const docs = docsArrays.flat().filter((doc) => doc.pageContent.length > 0);
 
     // Generate meta tags for each document
     for (const doc of docs) {
@@ -87,7 +93,10 @@ Output only a comma-separated list of tags, with no extra text, explanations, or
         const tags = await this.generateMetaTags(doc.pageContent);
         doc.metadata["tags"] = tags;
       } catch (error) {
-        console.error(`Failed to generate tags for document ${doc.metadata.source}, using empty tags:`, error);
+        console.error(
+          `Failed to generate tags for document ${doc.metadata.source}, using empty tags:`,
+          error,
+        );
         doc.metadata["tags"] = [];
       }
     }
@@ -98,11 +107,11 @@ Output only a comma-separated list of tags, with no extra text, explanations, or
 
   async loadFromUrls(urls?: string[]): Promise<Document[]> {
     const urlsToLoad = urls || config.documents.urls;
-    
+
     if (!urlsToLoad || urlsToLoad.length === 0) {
       throw new Error("No URLs provided to load documents.");
     }
-    
+
     return this.loadAllDocuments(urlsToLoad);
   }
 
@@ -116,16 +125,24 @@ Output only a comma-separated list of tags, with no extra text, explanations, or
     const allSplitsArrays = await Promise.all(
       docs.map(async (doc) => {
         try {
-          return await splitter.createDocuments([doc.pageContent], [doc.metadata]);
+          return await splitter.createDocuments(
+            [doc.pageContent],
+            [doc.metadata],
+          );
         } catch (error) {
-          console.error(`Error splitting document ${doc.metadata.source}:`, error);
+          console.error(
+            `Error splitting document ${doc.metadata.source}:`,
+            error,
+          );
           return [];
         }
-      })
+      }),
     );
-    
+
     const allSplits = allSplitsArrays.flat();
-    console.log(`Split ${docs.length} documents into ${allSplits.length} sub-documents.`);
+    console.log(
+      `Split ${docs.length} documents into ${allSplits.length} sub-documents.`,
+    );
     return allSplits;
   }
 

@@ -1,9 +1,9 @@
-import type { Message } from './message';
-import type { Conversation } from './conversation';
+import type { Message } from "./message";
+import type { Conversation } from "./conversation";
 
 // Re-export core types
-export type { Message } from './message';
-export type { Conversation } from './conversation';
+export type { Message } from "./message";
+export type { Conversation } from "./conversation";
 
 // API response types
 export interface ApiResponse {
@@ -17,7 +17,7 @@ export interface LoadingState {
   error?: string;
 }
 
-// Chat API hook return type  
+// Chat API hook return type
 export interface ChatApiHook {
   messages: Message[];
   send: (input: string) => Promise<void>;

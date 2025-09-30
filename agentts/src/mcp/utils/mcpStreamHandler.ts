@@ -1,11 +1,11 @@
 /**
  * MCP Stream Handler Utility
- * 
+ *
  * Handles the conversion of ChatService streaming responses to MCP protocol format.
  * Integrates with the existing SSE streaming infrastructure to provide MCP-compatible responses.
  */
 
-import { MCPStreamingResponse } from '../schemas/mcpSchemas.ts';
+import { MCPStreamingResponse } from "../schemas/mcpSchemas.ts";
 
 export interface StreamEvent {
   event: string;
@@ -13,7 +13,7 @@ export interface StreamEvent {
 }
 
 export class MCPStreamHandler {
-  private accumulatedContent: string = '';
+  private accumulatedContent: string = "";
   private eventBuffer: MCPStreamingResponse[] = [];
 
   /**
@@ -25,74 +25,74 @@ export class MCPStreamHandler {
     const timestamp = new Date().toISOString();
 
     switch (event.event) {
-      case 'start':
+      case "start":
         return {
-          type: 'start',
+          type: "start",
           data: {
-            message: 'Started processing REST API standards query',
-            ...event.data
+            message: "Started processing REST API standards query",
+            ...event.data,
           },
-          timestamp
+          timestamp,
         };
 
-      case 'step':
+      case "step":
         return {
-          type: 'step',
+          type: "step",
           data: {
-            step: event.data.step || 'Processing...',
+            step: event.data.step || "Processing...",
             progress: event.data.progress,
-            ...event.data
+            ...event.data,
           },
-          timestamp
+          timestamp,
         };
 
-      case 'token':
+      case "token":
         // Accumulate tokens for final response
         if (event.data.content) {
           this.accumulatedContent += event.data.content;
         }
         return {
-          type: 'token',
+          type: "token",
           data: {
-            content: event.data.content || '',
+            content: event.data.content || "",
             totalLength: this.accumulatedContent.length,
-            ...event.data
+            ...event.data,
           },
-          timestamp
+          timestamp,
         };
 
-      case 'complete':
+      case "complete":
         return {
-          type: 'complete',
+          type: "complete",
           data: {
-            message: 'REST API standards query completed',
+            message: "REST API standards query completed",
             finalContent: this.accumulatedContent || event.data.finalContent,
             totalTokens: this.accumulatedContent.length,
-            ...event.data
+            ...event.data,
           },
-          timestamp
+          timestamp,
         };
 
-      case 'error':
+      case "error":
         return {
-          type: 'error',
+          type: "error",
           data: {
-            error: event.data.error || 'Unknown error occurred',
-            code: event.data.code || 'PROCESSING_ERROR',
-            ...event.data
+            error: event.data.error || "Unknown error occurred",
+            code: event.data.code || "PROCESSING_ERROR",
+            ...event.data,
           },
-          timestamp
+          timestamp,
         };
 
       default:
         // Handle unknown event types gracefully
         return {
-          type: 'step',
+          type: "step",
           data: {
             step: `Unknown event: ${event.event}`,
-            originalData: event.data
+            originalData: event.data,
           },
-          timestamp
+          timestamp,
         };
     }
   }
@@ -128,7 +128,7 @@ export class MCPStreamHandler {
    * Reset handler state for new request
    */
   reset(): void {
-    this.accumulatedContent = '';
+    this.accumulatedContent = "";
     this.eventBuffer = [];
   }
 
@@ -145,20 +145,20 @@ export class MCPStreamHandler {
       duration: number;
     };
   } {
-    const firstEvent = this.eventBuffer.find(e => e.type === 'start');
-    const lastEvent = this.eventBuffer.find(e => e.type === 'complete');
-    
+    const firstEvent = this.eventBuffer.find((e) => e.type === "start");
+    const lastEvent = this.eventBuffer.find((e) => e.type === "complete");
+
     const startTime = firstEvent ? new Date(firstEvent.timestamp) : new Date();
     const endTime = lastEvent ? new Date(lastEvent.timestamp) : new Date();
-    
+
     return {
       content: this.accumulatedContent,
       events: [...this.eventBuffer],
       metadata: {
         totalEvents: this.eventBuffer.length,
         totalTokens: this.accumulatedContent.length,
-        duration: endTime.getTime() - startTime.getTime()
-      }
+        duration: endTime.getTime() - startTime.getTime(),
+      },
     };
   }
 }

@@ -1,4 +1,4 @@
-import { FastifyReply } from 'fastify';
+import { FastifyReply } from "fastify";
 
 /**
  * Utility functions for standardized response formatting in Fastify routes
@@ -44,7 +44,11 @@ export class ResponseFormatter {
   /**
    * Send a standardized success response with data (Fastify)
    */
-  static success<T>(reply: FastifyReply, data: T, statusCode: number = 200): void {
+  static success<T>(
+    reply: FastifyReply,
+    data: T,
+    statusCode: number = 200,
+  ): void {
     reply.status(statusCode).send(data);
   }
 
@@ -56,13 +60,13 @@ export class ResponseFormatter {
     message: string,
     code: string,
     statusCode: number = 500,
-    additionalInfo?: { stack?: string; details?: ErrorResponse['details'] }
+    additionalInfo?: { stack?: string; details?: ErrorResponse["details"] },
   ): void {
     const errorResponse: ErrorResponse = {
       error: message,
       code,
       timestamp: new Date().toISOString(),
-      ...additionalInfo
+      ...additionalInfo,
     };
 
     reply.status(statusCode).send(errorResponse);
@@ -74,13 +78,13 @@ export class ResponseFormatter {
   static createErrorResponse(
     message: string,
     code: string,
-    additionalInfo?: { stack?: string; details?: ErrorResponse['details'] }
+    additionalInfo?: { stack?: string; details?: ErrorResponse["details"] },
   ): ErrorResponse {
     return {
       error: message,
       code,
       timestamp: new Date().toISOString(),
-      ...additionalInfo
+      ...additionalInfo,
     };
   }
 
@@ -91,31 +95,37 @@ export class ResponseFormatter {
     return {
       success: true,
       message,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
 
   /**
    * Validation error for missing or empty required fields
    */
-  static validationError(fieldName: string, requirement: string): ErrorResponse {
+  static validationError(
+    fieldName: string,
+    requirement: string,
+  ): ErrorResponse {
     return ResponseFormatter.createErrorResponse(
       `${fieldName} ${requirement}`,
-      'VALIDATION_ERROR'
+      "VALIDATION_ERROR",
     );
   }
 
   /**
    * Not found error for resources
    */
-  static notFoundError(resourceType: string, identifier?: string): ErrorResponse {
-    const message = identifier 
+  static notFoundError(
+    resourceType: string,
+    identifier?: string,
+  ): ErrorResponse {
+    const message = identifier
       ? `${resourceType} with identifier '${identifier}' not found`
       : `${resourceType} not found`;
-    
+
     return ResponseFormatter.createErrorResponse(
-      message, 
-      `${resourceType.toUpperCase()}_NOT_FOUND`
+      message,
+      `${resourceType.toUpperCase()}_NOT_FOUND`,
     );
   }
 
@@ -125,8 +135,10 @@ export class ResponseFormatter {
   static internalError(operation: string, error?: Error): ErrorResponse {
     return ResponseFormatter.createErrorResponse(
       `Internal server error ${operation}`,
-      'INTERNAL_ERROR',
-      process.env.NODE_ENV === 'development' && error ? { stack: error.stack } : undefined
+      "INTERNAL_ERROR",
+      process.env.NODE_ENV === "development" && error
+        ? { stack: error.stack }
+        : undefined,
     );
   }
 
@@ -136,7 +148,7 @@ export class ResponseFormatter {
   static serviceError(serviceName: string): ErrorResponse {
     return ResponseFormatter.createErrorResponse(
       `${serviceName} service is currently unavailable`,
-      'SERVICE_UNAVAILABLE'
+      "SERVICE_UNAVAILABLE",
     );
   }
 }

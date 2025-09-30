@@ -1,5 +1,8 @@
-import { useState, useCallback } from 'react';
-import { getNetworkErrorType, NetworkErrorType } from '../components/common/NetworkError';
+import { useState, useCallback } from "react";
+import {
+  getNetworkErrorType,
+  NetworkErrorType,
+} from "../components/common/NetworkError";
 
 export interface ErrorState {
   error: Error | null;
@@ -54,32 +57,36 @@ export function useErrorHandler(): ErrorState & ErrorHandlerActions {
     });
   }, []);
 
-  const retry = useCallback(async (retryFn: () => Promise<void> | void) => {
-    setErrorState(prev => ({
-      ...prev,
-      isRetrying: true,
-    }));
+  const retry = useCallback(
+    async (retryFn: () => Promise<void> | void) => {
+      setErrorState((prev) => ({
+        ...prev,
+        isRetrying: true,
+      }));
 
-    try {
-      await retryFn();
-      clearError();
-    } catch (error) {
-      setError(error as Error);
-    }
-  }, [clearError, setError]);
+      try {
+        await retryFn();
+        clearError();
+      } catch (error) {
+        setError(error as Error);
+      }
+    },
+    [clearError, setError],
+  );
 
-  const handleAsyncError = useCallback(async <T>(
-    asyncFn: () => Promise<T>
-  ): Promise<T | null> => {
-    try {
-      clearError();
-      const result = await asyncFn();
-      return result;
-    } catch (error) {
-      setError(error as Error);
-      return null;
-    }
-  }, [clearError, setError]);
+  const handleAsyncError = useCallback(
+    async <T>(asyncFn: () => Promise<T>): Promise<T | null> => {
+      try {
+        clearError();
+        const result = await asyncFn();
+        return result;
+      } catch (error) {
+        setError(error as Error);
+        return null;
+      }
+    },
+    [clearError, setError],
+  );
 
   return {
     ...errorState,
@@ -98,7 +105,7 @@ export function useFormErrors<T extends Record<string, string>>() {
   const [isValid, setIsValid] = useState(true);
 
   const setFieldError = useCallback((field: keyof T, error: string | null) => {
-    setFieldErrors(prev => {
+    setFieldErrors((prev) => {
       const updated = { ...prev };
       if (error) {
         updated[field] = error as T[keyof T];
@@ -114,15 +121,18 @@ export function useFormErrors<T extends Record<string, string>>() {
     setIsValid(true);
   }, []);
 
-  const validateField = useCallback((
-    field: keyof T, 
-    value: string, 
-    validator: (value: string) => string | null
-  ) => {
-    const error = validator(value);
-    setFieldError(field, error);
-    return error === null;
-  }, [setFieldError]);
+  const validateField = useCallback(
+    (
+      field: keyof T,
+      value: string,
+      validator: (value: string) => string | null,
+    ) => {
+      const error = validator(value);
+      setFieldError(field, error);
+      return error === null;
+    },
+    [setFieldError],
+  );
 
   const hasErrors = Object.keys(fieldErrors).length > 0;
 

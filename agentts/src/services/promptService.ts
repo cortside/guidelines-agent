@@ -1,6 +1,6 @@
 import { ChatPromptTemplate } from "@langchain/core/prompts";
 import { pull } from "langchain/hub";
-import { config } from '../config/index.ts';
+import { config } from "../config/index.ts";
 
 export class PromptService {
   private static ragPromptTemplateCache: ChatPromptTemplate | null = null;
@@ -27,9 +27,13 @@ export class PromptService {
   public static async getHubPromptTemplate(): Promise<ChatPromptTemplate> {
     if (!this.hubPromptTemplateCache) {
       try {
-        this.hubPromptTemplateCache = await pull<ChatPromptTemplate>("rlm/rag-prompt");
+        this.hubPromptTemplateCache =
+          await pull<ChatPromptTemplate>("rlm/rag-prompt");
       } catch (error) {
-        console.warn("Failed to load prompt template from hub, using default:", error);
+        console.warn(
+          "Failed to load prompt template from hub, using default:",
+          error,
+        );
         // Fallback to local template
         this.hubPromptTemplateCache = this.ragPromptTemplate;
       }
@@ -39,11 +43,11 @@ export class PromptService {
 
   public static createSystemMessage(availableTags: string[]): string {
     const baseMessage = this.systemMessage;
-    
+
     // Insert available tags into the system message
     return baseMessage.replace(
-      "The following tags are valid: [${loader.tags.join(\", \")}]",
-      `The following tags are valid: [${availableTags.join(", ")}]`
+      'The following tags are valid: [${loader.tags.join(", ")}]',
+      `The following tags are valid: [${availableTags.join(", ")}]`,
     );
   }
 

@@ -1,6 +1,10 @@
-import React from 'react';
+import React from "react";
 
-export type NetworkErrorType = 'offline' | 'timeout' | 'server_error' | 'unknown';
+export type NetworkErrorType =
+  | "offline"
+  | "timeout"
+  | "server_error"
+  | "unknown";
 
 interface NetworkErrorProps {
   error: Error;
@@ -13,52 +17,94 @@ interface NetworkErrorProps {
 /**
  * Component for displaying network-related errors with appropriate messaging and actions
  */
-export function NetworkError({ 
-  error, 
-  type = 'unknown', 
-  onRetry, 
-  onDismiss, 
-  className = '' 
+export function NetworkError({
+  error,
+  type = "unknown",
+  onRetry,
+  onDismiss,
+  className = "",
 }: Readonly<NetworkErrorProps>) {
   const getErrorConfig = (errorType: NetworkErrorType) => {
     switch (errorType) {
-      case 'offline':
+      case "offline":
         return {
-          title: 'No Internet Connection',
-          message: 'Please check your internet connection and try again.',
+          title: "No Internet Connection",
+          message: "Please check your internet connection and try again.",
           icon: (
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192L5.636 18.364M12 12h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192L5.636 18.364M12 12h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
             </svg>
           ),
         };
-      case 'timeout':
+      case "timeout":
         return {
-          title: 'Request Timeout',
-          message: 'The request is taking longer than expected. Please try again.',
+          title: "Request Timeout",
+          message:
+            "The request is taking longer than expected. Please try again.",
           icon: (
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
             </svg>
           ),
         };
-      case 'server_error':
+      case "server_error":
         return {
-          title: 'Server Error',
-          message: 'Something went wrong on our end. Please try again in a moment.',
+          title: "Server Error",
+          message:
+            "Something went wrong on our end. Please try again in a moment.",
           icon: (
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
             </svg>
           ),
         };
       default:
         return {
-          title: 'Connection Error',
-          message: 'Unable to connect to the service. Please try again.',
+          title: "Connection Error",
+          message: "Unable to connect to the service. Please try again.",
           icon: (
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+              />
             </svg>
           ),
         };
@@ -68,7 +114,7 @@ export function NetworkError({
   const config = getErrorConfig(type);
 
   return (
-    <div 
+    <div
       className={`bg-red-50 border-l-4 border-red-400 p-4 rounded-md ${className}`}
       role="alert"
       aria-live="assertive"
@@ -77,15 +123,11 @@ export function NetworkError({
         <div className="flex-shrink-0 text-red-400" aria-hidden="true">
           {config.icon}
         </div>
-        
+
         <div className="ml-3 flex-1">
-          <h3 className="text-sm font-medium text-red-800">
-            {config.title}
-          </h3>
-          
-          <p className="mt-1 text-sm text-red-700">
-            {config.message}
-          </p>
+          <h3 className="text-sm font-medium text-red-800">{config.title}</h3>
+
+          <p className="mt-1 text-sm text-red-700">{config.message}</p>
 
           {/* Technical error details for development */}
           {import.meta.env?.DEV && (
@@ -110,7 +152,7 @@ export function NetworkError({
                 Try Again
               </button>
             )}
-            
+
             {onDismiss && (
               <button
                 onClick={onDismiss}
@@ -144,18 +186,18 @@ export function NetworkError({
  */
 export function getNetworkErrorType(error: Error): NetworkErrorType {
   const message = error.message.toLowerCase();
-  
-  if (message.includes('network') && message.includes('offline')) {
-    return 'offline';
+
+  if (message.includes("network") && message.includes("offline")) {
+    return "offline";
   }
-  
-  if (message.includes('timeout') || message.includes('time out')) {
-    return 'timeout';
+
+  if (message.includes("timeout") || message.includes("time out")) {
+    return "timeout";
   }
-  
-  if (message.includes('server') || message.includes('5')) {
-    return 'server_error';
+
+  if (message.includes("server") || message.includes("5")) {
+    return "server_error";
   }
-  
-  return 'unknown';
+
+  return "unknown";
 }

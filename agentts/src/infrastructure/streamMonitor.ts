@@ -29,7 +29,7 @@ export interface StreamConnection {
  */
 export class StreamMonitor {
   private static instance: StreamMonitor | null = null;
-  
+
   private readonly activeConnections: Map<string, StreamConnection> = new Map();
   private metrics: StreamMetrics = {
     activeConnections: 0,
@@ -38,12 +38,12 @@ export class StreamMonitor {
     cancelledStreams: 0,
     erroredStreams: 0,
     averageStreamDuration: 0,
-    averageTokensPerStream: 0
+    averageTokensPerStream: 0,
   };
-  
+
   private streamDurations: number[] = [];
   private tokenCounts: number[] = [];
-  
+
   // Singleton pattern for global stream monitoring
   public static getInstance(): StreamMonitor {
     StreamMonitor.instance ??= new StreamMonitor();
@@ -58,17 +58,19 @@ export class StreamMonitor {
       id: messageId,
       threadId,
       startTime: new Date(),
-      currentStep: 'initializing',
+      currentStep: "initializing",
       tokenCount: 0,
-      clientDisconnected: false
+      clientDisconnected: false,
     };
 
     this.activeConnections.set(messageId, connection);
     this.metrics.activeConnections = this.activeConnections.size;
     this.metrics.totalStreamsStarted++;
     this.metrics.lastStreamStartTime = new Date().toISOString();
-    
-    console.log(`StreamMonitor: Started tracking stream ${messageId} for thread ${threadId}`);
+
+    console.log(
+      `StreamMonitor: Started tracking stream ${messageId} for thread ${threadId}`,
+    );
   }
 
   /**
@@ -99,10 +101,10 @@ export class StreamMonitor {
     const connection = this.activeConnections.get(messageId);
     if (connection) {
       const duration = Date.now() - connection.startTime.getTime();
-      
+
       this.streamDurations.push(duration);
       this.tokenCounts.push(connection.tokenCount);
-      
+
       // Keep only the last 100 records for rolling averages
       if (this.streamDurations.length > 100) {
         this.streamDurations.shift();
@@ -110,13 +112,15 @@ export class StreamMonitor {
       if (this.tokenCounts.length > 100) {
         this.tokenCounts.shift();
       }
-      
+
       this.metrics.completedStreams++;
       this.updateAverages();
-      
-      console.log(`StreamMonitor: Completed stream ${messageId} in ${duration}ms with ${connection.tokenCount} tokens`);
+
+      console.log(
+        `StreamMonitor: Completed stream ${messageId} in ${duration}ms with ${connection.tokenCount} tokens`,
+      );
     }
-    
+
     this.removeConnection(messageId);
   }
 
@@ -129,13 +133,15 @@ export class StreamMonitor {
       const duration = Date.now() - connection.startTime.getTime();
       this.streamDurations.push(duration);
       this.tokenCounts.push(connection.tokenCount);
-      
+
       this.metrics.cancelledStreams++;
       this.updateAverages();
-      
-      console.log(`StreamMonitor: Cancelled stream ${messageId} after ${duration}ms with ${connection.tokenCount} tokens`);
+
+      console.log(
+        `StreamMonitor: Cancelled stream ${messageId} after ${duration}ms with ${connection.tokenCount} tokens`,
+      );
     }
-    
+
     this.removeConnection(messageId);
   }
 
@@ -147,13 +153,15 @@ export class StreamMonitor {
     if (connection) {
       const duration = Date.now() - connection.startTime.getTime();
       this.streamDurations.push(duration);
-      
+
       this.metrics.erroredStreams++;
       this.updateAverages();
-      
-      console.log(`StreamMonitor: Stream ${messageId} errored after ${duration}ms: ${error}`);
+
+      console.log(
+        `StreamMonitor: Stream ${messageId} errored after ${duration}ms: ${error}`,
+      );
     }
-    
+
     this.removeConnection(messageId);
   }
 
@@ -193,9 +201,9 @@ export class StreamMonitor {
    * Cleanup stale connections (older than 5 minutes)
    */
   public cleanupStaleConnections(): number {
-    const fiveMinutesAgo = Date.now() - (5 * 60 * 1000);
+    const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
     let cleaned = 0;
-    
+
     for (const [messageId, connection] of this.activeConnections.entries()) {
       if (connection.startTime.getTime() < fiveMinutesAgo) {
         console.log(`StreamMonitor: Cleaning up stale connection ${messageId}`);
@@ -203,11 +211,11 @@ export class StreamMonitor {
         cleaned++;
       }
     }
-    
+
     if (cleaned > 0) {
       console.log(`StreamMonitor: Cleaned up ${cleaned} stale connections`);
     }
-    
+
     return cleaned;
   }
 
@@ -225,10 +233,10 @@ export class StreamMonitor {
       cancelledStreams: 0,
       erroredStreams: 0,
       averageStreamDuration: 0,
-      averageTokensPerStream: 0
+      averageTokensPerStream: 0,
     };
-    
-    console.log('StreamMonitor: Metrics reset');
+
+    console.log("StreamMonitor: Metrics reset");
   }
 
   /**
@@ -246,12 +254,16 @@ export class StreamMonitor {
   private updateAverages(): void {
     if (this.streamDurations.length > 0) {
       const sum = this.streamDurations.reduce((a, b) => a + b, 0);
-      this.metrics.averageStreamDuration = Math.round(sum / this.streamDurations.length);
+      this.metrics.averageStreamDuration = Math.round(
+        sum / this.streamDurations.length,
+      );
     }
-    
+
     if (this.tokenCounts.length > 0) {
       const sum = this.tokenCounts.reduce((a, b) => a + b, 0);
-      this.metrics.averageTokensPerStream = Math.round(sum / this.tokenCounts.length);
+      this.metrics.averageTokensPerStream = Math.round(
+        sum / this.tokenCounts.length,
+      );
     }
   }
 }
@@ -266,9 +278,12 @@ export const streamMonitor = StreamMonitor.getInstance();
  * Runs every 2 minutes
  */
 export function initializeStreamMonitor(): void {
-  console.log('StreamMonitor: Initializing with periodic cleanup');
-  
-  setInterval(() => {
-    streamMonitor.cleanupStaleConnections();
-  }, 2 * 60 * 1000); // 2 minutes
+  console.log("StreamMonitor: Initializing with periodic cleanup");
+
+  setInterval(
+    () => {
+      streamMonitor.cleanupStaleConnections();
+    },
+    2 * 60 * 1000,
+  ); // 2 minutes
 }

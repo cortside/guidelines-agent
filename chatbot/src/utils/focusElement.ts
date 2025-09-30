@@ -7,14 +7,17 @@
  * @param element - The element to focus
  * @param delay - Delay in milliseconds (default: 10ms)
  */
-export function focusElement(element: HTMLElement | null, delay: number = 10): void {
+export function focusElement(
+  element: HTMLElement | null,
+  delay: number = 10,
+): void {
   if (!element) return;
-  
+
   setTimeout(() => {
     try {
       element.focus();
     } catch (error) {
-      console.warn('Failed to focus element:', error);
+      console.warn("Failed to focus element:", error);
     }
   }, delay);
 }
@@ -25,11 +28,11 @@ export function focusElement(element: HTMLElement | null, delay: number = 10): v
  */
 export function focusElementImmediate(element: HTMLElement | null): void {
   if (!element) return;
-  
+
   try {
     element.focus();
   } catch (error) {
-    console.warn('Failed to focus element:', error);
+    console.warn("Failed to focus element:", error);
   }
 }
 

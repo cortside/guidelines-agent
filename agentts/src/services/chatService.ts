@@ -45,7 +45,7 @@ export class ChatService {
     this.graph = WorkflowService.create(
       this.vectorStore,
       this.llm,
-      promptTemplate
+      promptTemplate,
     );
 
     // Validate thread metadata against actual agent data
@@ -65,12 +65,12 @@ export class ChatService {
 
       if (testSearch.length === 0 || config.documents.forceReload) {
         console.log(
-          "No documents in vector store or force reload enabled, loading from URLs..."
+          "No documents in vector store or force reload enabled, loading from URLs...",
         );
 
         const splits = await this.documentService.splitDocumentsFromUrls();
         console.log(
-          `Document tags identified: ${this.documentService.tags.length}`
+          `Document tags identified: ${this.documentService.tags.length}`,
         );
 
         // Index chunks
@@ -91,26 +91,26 @@ export class ChatService {
         this.documentService.setTags(Array.from(allTags));
 
         console.log(
-          `Document tags identified: ${this.documentService.allTags.length}`
+          `Document tags identified: ${this.documentService.allTags.length}`,
         );
         console.log(
-          `Found ${testSearch.length} existing documents in vector store`
+          `Found ${testSearch.length} existing documents in vector store`,
         );
       }
     } catch (error) {
       // If collection doesn't exist or is empty, load documents
       console.log(
-        "Vector store collection doesn't exist or is empty, loading from URLs..."
+        "Vector store collection doesn't exist or is empty, loading from URLs...",
       );
       console.log(
         `Error details: ${
           error instanceof Error ? error.message : String(error)
-        }`
+        }`,
       );
 
       const splits = await this.documentService.splitDocumentsFromUrls();
       console.log(
-        `Document tags identified: ${this.documentService.tags.length}`
+        `Document tags identified: ${this.documentService.tags.length}`,
       );
 
       // Index chunks
@@ -144,7 +144,7 @@ export class ChatService {
       } else {
         console.log(`Creating new thread with ID: ${threadId}`);
         const systemMessage = PromptService.createSystemMessage(
-          this.documentService.tags
+          this.documentService.tags,
         );
         inputs.messages.push(new SystemMessage(systemMessage));
       }
@@ -154,7 +154,7 @@ export class ChatService {
         threadId,
         content,
         isNewThread,
-        messageStartTime
+        messageStartTime,
       );
 
       inputs.messages.push(new HumanMessage(content));
@@ -168,7 +168,7 @@ export class ChatService {
       const messageCompletedTime = new Date();
       this.threadManagementService.updateThreadActivity(
         threadId,
-        messageCompletedTime
+        messageCompletedTime,
       );
 
       if (lastMessage) {
@@ -265,7 +265,7 @@ export class ChatService {
     // 3. Implement a custom tracking mechanism
 
     console.log(
-      "ChatService: Thread discovery not supported by LangGraph, using existing metadata"
+      "ChatService: Thread discovery not supported by LangGraph, using existing metadata",
     );
     return [];
   }
@@ -278,7 +278,7 @@ export class ChatService {
     content: string,
     threadId: string,
     reply: FastifyReply,
-    systemMessage?: string
+    systemMessage?: string,
   ): Promise<void> {
     if (!this.graph) {
       throw new Error("ChatService not initialized");
@@ -351,7 +351,7 @@ export class ChatService {
       const streamTimeout = setTimeout(() => {
         if (!streamCompleted) {
           console.log(
-            "Stream timeout reached after 30 seconds - this indicates a problem with LangGraph execution"
+            "Stream timeout reached after 30 seconds - this indicates a problem with LangGraph execution",
           );
           writeEvent("error", {
             error: "Request timeout - please try again",
@@ -377,9 +377,13 @@ export class ChatService {
             if (latestMessage !== lastMessage) {
               // New message or message update
               stepCount++;
-              
+
               // Check for tool calls to indicate search phase
-              if (latestMessage.tool_calls && latestMessage.tool_calls.length > 0 && !hasSeenToolCalls) {
+              if (
+                latestMessage.tool_calls &&
+                latestMessage.tool_calls.length > 0 &&
+                !hasSeenToolCalls
+              ) {
                 hasSeenToolCalls = true;
                 writeEvent("step", {
                   step: "Searching for relevant information...",
@@ -387,7 +391,7 @@ export class ChatService {
                 });
                 console.log("Tool calls detected, sending search step"); // Debug logging
               }
-              
+
               if (latestMessage.content) {
                 const messageContent =
                   typeof latestMessage.content === "string"
@@ -407,13 +411,13 @@ export class ChatService {
                     });
                     console.log("AI content starting, sending generation step"); // Debug logging
                   }
-                  
+
                   // This is AI response content - send incremental updates
                   console.log(
                     "AI message detected, accumulated:",
                     accumulatedContent.length,
                     "new:",
-                    messageContent.length
+                    messageContent.length,
                   ); // Debug logging
 
                   // Check if this is new content (different from accumulated)
@@ -422,12 +426,12 @@ export class ChatService {
                     messageContent.length > 0
                   ) {
                     const newContent = messageContent.slice(
-                      accumulatedContent.length
+                      accumulatedContent.length,
                     );
                     if (newContent && newContent.trim().length > 0) {
                       console.log(
                         "Sending new content:",
-                        newContent.substring(0, 50) + "..."
+                        newContent.substring(0, 50) + "...",
                       ); // Debug logging (truncated)
 
                       // Send the new content in chunks for streaming effect
@@ -448,29 +452,37 @@ export class ChatService {
                   if (messageContent.length > 50) {
                     console.log(
                       "Complete AI response detected, length:",
-                      messageContent.length
+                      messageContent.length,
                     );
                   }
                 } else if (latestMessage._getType() === "tool") {
                   // Tool response - indicates search completion
-                  console.log("Tool message detected, content:", messageContent.substring(0, 200));
-                  
+                  console.log(
+                    "Tool message detected, content:",
+                    messageContent.substring(0, 200),
+                  );
+
                   if (messageContent.includes("Source:")) {
                     // Tool returned results
                     writeEvent("step", {
                       step: "Processing retrieved information...",
                       timestamp: new Date().toISOString(),
                     });
-                    console.log("Tool results detected, sending processing step"); // Debug logging
+                    console.log(
+                      "Tool results detected, sending processing step",
+                    ); // Debug logging
                   }
-                } else if (latestMessage._getType() !== "ai" && latestMessage._getType() !== "human") {
+                } else if (
+                  latestMessage._getType() !== "ai" &&
+                  latestMessage._getType() !== "human"
+                ) {
                   // Other message types
                   const messageType = latestMessage._getType();
                   console.log(
                     "Other message type detected:",
                     messageType,
                     "content:",
-                    messageContent.substring(0, 200)
+                    messageContent.substring(0, 200),
                   ); // Debug logging with more content
                 } else if (latestMessage._getType() === "human") {
                   // Skip human messages - they're just the user input being processed
@@ -482,9 +494,9 @@ export class ChatService {
                     "Other message type detected:",
                     messageType,
                     "content:",
-                    messageContent.substring(0, 100)
+                    messageContent.substring(0, 100),
                   ); // Debug logging
-                  
+
                   // Only send as step if it's not empty and seems like a meaningful update
                   if (messageContent && messageContent.trim().length > 0) {
                     writeEvent("step", {
@@ -508,7 +520,7 @@ export class ChatService {
           // If no AI content was accumulated, there might be an issue with the workflow
           if (!accumulatedContent) {
             console.log(
-              "Warning: No AI response content was generated from LangGraph workflow"
+              "Warning: No AI response content was generated from LangGraph workflow",
             );
             writeEvent("error", {
               error:
@@ -553,7 +565,7 @@ export class ChatService {
 
       streamMonitor.errorStream(
         streamId,
-        error instanceof Error ? error.message : "Unknown error"
+        error instanceof Error ? error.message : "Unknown error",
       );
     } finally {
       // Clean up

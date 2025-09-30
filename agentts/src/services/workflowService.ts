@@ -16,16 +16,20 @@ import {
   BaseMessage,
 } from "@langchain/core/messages";
 import { ToolNode, toolsCondition } from "@langchain/langgraph/prebuilt";
-import { config } from '../config/index.ts';
+import { config } from "../config/index.ts";
 
 export class WorkflowService {
-  static create(vectorStore: VectorStore, llm: ChatOpenAI, promptTemplate: any) {
+  static create(
+    vectorStore: VectorStore,
+    llm: ChatOpenAI,
+    promptTemplate: any,
+  ) {
     const searchSchema = z.object({
       query: z.string().describe("Search query to run."),
       tags: z
         .array(z.string())
         .describe(
-          "Required Functional and topical tags that describe the users query."
+          "Required Functional and topical tags that describe the users query.",
         ),
     });
 
@@ -34,7 +38,7 @@ export class WorkflowService {
       llm: ChatOpenAI,
       query: string,
       docs: Document[],
-      topN: number
+      topN: number,
     ): Promise<Document[]> {
       console.log(`Ranking ${docs.length} documents for query: "${query}"`);
       if (docs.length <= topN) return docs;
@@ -59,7 +63,7 @@ export class WorkflowService {
 
         // Select topN ranked documents
         const rankedDocs = ranking.slice(0, topN).map((idx) => docs[idx]);
-        
+
         // Fallback: if ranking is incomplete, fill with remaining docs
         while (rankedDocs.length < topN && docs.length > rankedDocs.length) {
           const nextDoc = docs.find((doc) => !rankedDocs.includes(doc));
@@ -67,33 +71,43 @@ export class WorkflowService {
         }
         return rankedDocs;
       } catch (error) {
-        console.error("Error ranking documents, returning first N documents:", error);
+        console.error(
+          "Error ranking documents, returning first N documents:",
+          error,
+        );
         return docs.slice(0, topN);
       }
     }
 
     const retrieve = tool(
       async (search: z.infer<typeof searchSchema>) => {
-        console.log(`Searching for: "${search.query}" with tags: ${search.tags.join(", ")}`);
+        console.log(
+          `Searching for: "${search.query}" with tags: ${search.tags.join(", ")}`,
+        );
 
         try {
           // Use similaritySearchWithScore instead of similaritySearch
-          const retrievedDocsWithScores = await vectorStore.similaritySearchWithScore(
-            search.query,
-            config.retrieval.maxDocuments,
-            { "tags": {"$in": search.tags} }
-          );
+          const retrievedDocsWithScores =
+            await vectorStore.similaritySearchWithScore(
+              search.query,
+              config.retrieval.maxDocuments,
+              { tags: { $in: search.tags } },
+            );
           console.log(`Retrieved ${retrievedDocsWithScores.length} documents`);
 
           // enumerate retrieved docs with scores
           retrievedDocsWithScores.forEach(([doc, score], i) => {
-            const sourceSlice = doc.metadata.source ? doc.metadata.source : 'Unknown';
-            const lines = (doc.metadata["loc.lines.from"] !== undefined && doc.metadata["loc.lines.to"] !== undefined)
-              ? `[${doc.metadata["loc.lines.from"]}-${doc.metadata["loc.lines.to"]}]`
-              : '[No line info]';
+            const sourceSlice = doc.metadata.source
+              ? doc.metadata.source
+              : "Unknown";
+            const lines =
+              doc.metadata["loc.lines.from"] !== undefined &&
+              doc.metadata["loc.lines.to"] !== undefined
+                ? `[${doc.metadata["loc.lines.from"]}-${doc.metadata["loc.lines.to"]}]`
+                : "[No line info]";
             const tags = doc.metadata.tags ? doc.metadata.tags : [];
             console.log(
-              `Retrieved Doc${i + 1}: ${sourceSlice} ${lines} Tags: ${tags} Score: ${score}`
+              `Retrieved Doc${i + 1}: ${sourceSlice} ${lines} Tags: ${tags} Score: ${score}`,
             );
           });
 
@@ -103,36 +117,40 @@ export class WorkflowService {
             llm,
             search.query,
             filteredDocs,
-            config.retrieval.rankedDocuments
+            config.retrieval.rankedDocuments,
           );
 
           const serialized = selectedDocs
-            .map(
-              (doc) => {
-                const source = doc.metadata.source || 'Unknown';
-                const lines = (doc.metadata["loc.lines.from"] !== undefined && doc.metadata["loc.lines.to"] !== undefined)
+            .map((doc) => {
+              const source = doc.metadata.source || "Unknown";
+              const lines =
+                doc.metadata["loc.lines.from"] !== undefined &&
+                doc.metadata["loc.lines.to"] !== undefined
                   ? `[${doc.metadata["loc.lines.from"]}-${doc.metadata["loc.lines.to"]}]`
-                  : '[No line info]';
-                const tags = doc.metadata.tags ? doc.metadata.tags.join(",") : '';
-                return `Source: ${source}${lines}\nTags: ${tags}\nContent: ${doc.pageContent}`;
-              }
-            )
+                  : "[No line info]";
+              const tags = doc.metadata.tags ? doc.metadata.tags.join(",") : "";
+              return `Source: ${source}${lines}\nTags: ${tags}\nContent: ${doc.pageContent}`;
+            })
             .join("\n");
 
           console.log(`Retrieved ${selectedDocs.length} documents.`);
-          
+
           // enumerate filtered docs
           selectedDocs.forEach((doc, i) => {
-            const source = doc.metadata.source ? doc.metadata.source : 'Unknown';
-            const lines = (doc.metadata["loc.lines.from"] !== undefined && doc.metadata["loc.lines.to"] !== undefined)
-              ? `[${doc.metadata["loc.lines.from"]}-${doc.metadata["loc.lines.to"]}]`
-              : '[No line info]';
+            const source = doc.metadata.source
+              ? doc.metadata.source
+              : "Unknown";
+            const lines =
+              doc.metadata["loc.lines.from"] !== undefined &&
+              doc.metadata["loc.lines.to"] !== undefined
+                ? `[${doc.metadata["loc.lines.from"]}-${doc.metadata["loc.lines.to"]}]`
+                : "[No line info]";
             const tags = doc.metadata.tags ? doc.metadata.tags : [];
             console.log(
-              `Selected Doc${i + 1}: ${source} ${lines} Tags: ${tags}`
+              `Selected Doc${i + 1}: ${source} ${lines} Tags: ${tags}`,
             );
           });
-          
+
           return [serialized, selectedDocs];
         } catch (error) {
           console.error("Error during document retrieval:", error);
@@ -144,7 +162,7 @@ export class WorkflowService {
         description: "Retrieve information related to a query.",
         schema: searchSchema,
         responseFormat: "content_and_artifact",
-      }
+      },
     );
 
     // Step 1: Generate an AIMessage that may include a tool-call to be sent.
@@ -179,10 +197,14 @@ export class WorkflowService {
         recentToolMessages.reverse();
 
         // Format into prompt
-        const docsContent = recentToolMessages.map((doc) => 
-          typeof doc.content === 'string' ? doc.content : JSON.stringify(doc.content)
-        ).join("\n");
-        
+        const docsContent = recentToolMessages
+          .map((doc) =>
+            typeof doc.content === "string"
+              ? doc.content
+              : JSON.stringify(doc.content),
+          )
+          .join("\n");
+
         const systemMessageContent =
           "You are an assistant for question-answering tasks. " +
           "Use the following pieces of retrieved context to answer " +
@@ -196,9 +218,9 @@ export class WorkflowService {
           (message) =>
             message instanceof HumanMessage ||
             message instanceof SystemMessage ||
-            (message instanceof AIMessage && message.tool_calls?.length == 0)
+            (message instanceof AIMessage && message.tool_calls?.length == 0),
         );
-        
+
         const prompt = [
           new SystemMessage(systemMessageContent),
           ...conversationMessages,
