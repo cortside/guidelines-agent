@@ -3,9 +3,9 @@ import {
   ChatRequestSchema, 
   ChatResponseSchema, 
   ThreadHistoryResponseSchema,
-  ErrorResponseSchema 
-} from '../schemas/chat.js';
-import { ResponseFormatter } from '../utils/responseFormatter.js';
+  ErrorResponseSchema
+} from '../schemas/chat.ts';
+import { ResponseFormatter } from '../utils/responseFormatter.ts';
 
 /**
  * Fastify Chat Routes Plugin
@@ -56,6 +56,81 @@ const chatRoutes: FastifyPluginAsyncTypebox = async function (fastify) {
         'processing chat message',
         error as Error
       );
+    }
+  });
+
+  /**
+   * POST /chat/stream - Process a chat message with streaming response using Server-Sent Events
+   * Provides real-time streaming of AI responses with workflow progress updates
+   */
+  fastify.post('/chat/stream', {
+    schema: {
+      description: 'Process a chat message with streaming response using Server-Sent Events (SSE). Returns workflow progress and token-level content streaming.',
+      summary: 'Process a chat message with streaming response',
+      tags: ['Chat'],
+      body: ChatRequestSchema,
+      produces: ['text/event-stream'],
+      response: {
+        200: {
+          description: 'Server-Sent Events stream with chat responses',
+          type: 'string',
+          format: 'event-stream'
+        },
+        400: ErrorResponseSchema,
+        500: ErrorResponseSchema
+      }
+    }
+  }, async (request, reply) => {
+    try {
+      const { threadId, message, systemMessage } = request.body;
+      
+      // Input validation
+      if (!threadId.trim() || !message.trim()) {
+        return reply.status(400).send(ResponseFormatter.createErrorResponse(
+          'threadId and message cannot be empty',
+          'VALIDATION_ERROR'
+        ));
+      }
+
+      // Set up AbortController for client disconnect handling
+      const abortController = new AbortController();
+      
+      // Handle client disconnect
+      request.socket.on('close', () => {
+        console.log('Client disconnected from stream');
+        abortController.abort();
+      });
+
+      const chatService = fastify.chatService;
+      
+      // Process message with streaming
+      await chatService.processMessageStream(
+        message, 
+        threadId, 
+        reply, 
+        systemMessage
+      );
+      
+    } catch (error) {
+      fastify.log.error(error, 'Streaming error');
+      
+      // Send error as SSE event if headers not sent yet
+      if (!reply.sent) {
+        reply.raw.writeHead(200, {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive',
+          'Access-Control-Allow-Origin': '*'
+        });
+        
+        const errorData = JSON.stringify({
+          error: error instanceof Error ? error.message : 'Unknown streaming error',
+          timestamp: new Date().toISOString()
+        });
+        reply.raw.write(`event: error\n`);
+        reply.raw.write(`data: ${errorData}\n\n`);
+        reply.raw.end();
+      }
     }
   });
 

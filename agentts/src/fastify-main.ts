@@ -1,9 +1,9 @@
 import Fastify from 'fastify';
 import { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
-import { config } from './config/index.js';
-import { ChatService } from './services/chatService.js';
-import { fastifyErrorHandler } from './fastify-plugins/errorHandler.js';
-import validationPlugin from './fastify-plugins/validation.js';
+import { config } from './config/index.ts';
+import { ChatService } from './services/chatService.ts';
+import { fastifyErrorHandler } from './fastify-plugins/errorHandler.ts';
+import validationPlugin from './fastify-plugins/validation.ts';
 
 const fastify = Fastify({ 
   logger: {
@@ -137,9 +137,9 @@ async function startServer() {
     });
 
     // Register route plugins
-    await fastify.register(import('./fastify-routes/health.js'));
-    await fastify.register(import('./fastify-routes/chat.js'));
-    await fastify.register(import('./fastify-routes/threads.js'));
+    await fastify.register(import('./fastify-routes/health.ts'));
+    await fastify.register(import('./fastify-routes/chat.ts'));
+    await fastify.register(import('./fastify-routes/threads.ts'));
 
     // Temporary root route for testing
     fastify.get('/', async (request, reply) => {

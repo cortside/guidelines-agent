@@ -1,11 +1,11 @@
 // Common schemas
-export * from './common.js';
+export * from './common.ts';
 
 // Chat-related schemas
-export * from './chat.js';
+export * from './chat.ts';
 
 // Thread management schemas
-export * from './threads.js';
+export * from './threads.ts';
 
 // Health check schemas
-export * from './health.js';
+export * from './health.ts';

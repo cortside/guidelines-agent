@@ -1,5 +1,5 @@
 import { FastifyPluginAsyncTypebox } from '@fastify/type-provider-typebox';
-import { HealthResponseSchema, ErrorResponseSchema } from '../schemas/index.js';
+import { HealthResponseSchema, ErrorResponseSchema } from '../schemas/index.ts';
 
 /**
  * Health routes plugin for Fastify

@@ -1,6 +1,6 @@
 import { FastifyPluginAsyncTypebox } from '@fastify/type-provider-typebox';
 import { Type } from '@sinclair/typebox';
-import { ValidationError } from './errorHandler.js';
+import { ValidationError } from './errorHandler.ts';
 
 /**
  * Fastify plugin for custom validation logic beyond TypeBox schema validation.

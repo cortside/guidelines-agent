@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { ThreadManagementService } from "../services/threadManagementService.js";
+import { ThreadManagementService } from '../services/threadManagementService.ts';
 
 /**
  * Threads controller for managing conversation threads

@@ -9,8 +9,8 @@ import {
   ThreadStatsResponseSchema,
   ErrorResponseSchema,
   SuccessResponseSchema
-} from '../schemas/threads.js';
-import { ResponseFormatter } from '../utils/responseFormatter.js';
+} from '../schemas/threads.ts';
+import { ResponseFormatter } from '../utils/responseFormatter.ts';
 
 /**
  * Fastify Thread Management Routes Plugin

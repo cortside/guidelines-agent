@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { ApiError } from "../types/api.js";
+import { ApiError } from '../types/api.ts';
 
 export class AppError extends Error implements ApiError {
   public readonly statusCode: number;

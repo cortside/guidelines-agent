@@ -1,5 +1,5 @@
 import { Type } from '@sinclair/typebox';
-import { ErrorResponseSchema, SuccessResponseSchema } from './common.js';
+import { ErrorResponseSchema, SuccessResponseSchema } from './common.ts';
 
 /**
  * Thread creation request schema

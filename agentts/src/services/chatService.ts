@@ -3,15 +3,18 @@ import {
   SystemMessage,
   BaseMessage,
 } from "@langchain/core/messages";
+import { FastifyReply } from "fastify";
+import { streamMonitor } from "../infrastructure/streamMonitor.ts";
 import { VectorStore } from "@langchain/core/vectorstores";
 import { ChatOpenAI } from "@langchain/openai";
-import { WorkflowService } from "./workflowService.js";
-import { PromptService } from "./promptService.js";
-import { DocumentService } from "./documentService.js";
-import { createVectorStore } from "../infrastructure/vectorStore.js";
-import { createChatLLM } from "../infrastructure/llm.js";
-import { config } from "../config/index.js";
-import { ThreadManagementService } from "./threadManagementService.js";
+import { WorkflowService } from './workflowService.ts';
+import { PromptService } from './promptService.ts';
+import { DocumentService } from './documentService.ts';
+import { createVectorStore } from '../infrastructure/vectorStore.ts';
+import { createChatLLM } from '../infrastructure/llm.ts';
+import { config } from '../config/index.ts';
+import { ThreadManagementService } from './threadManagementService.ts';
+
 
 export class ChatService {
   private vectorStore: VectorStore | null = null;
@@ -235,4 +238,137 @@ export class ChatService {
     console.log("ChatService: Thread discovery not supported by LangGraph, using existing metadata");
     return [];
   }
+
+  /**
+   * Process a message with streaming response using Server-Sent Events (SSE)
+   * Implements hybrid streaming: workflow progress + token streaming
+   */
+  async processMessageStream(
+    content: string, 
+    threadId: string, 
+    reply: FastifyReply,
+    systemMessage?: string
+  ): Promise<void> {
+    if (!this.graph) {
+      throw new Error("ChatService not initialized");
+    }
+
+    // Register stream with monitor
+    const streamId = `stream_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+    streamMonitor.startStream(streamId, threadId);
+
+    try {
+      // Set up SSE headers
+      reply.raw.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Cache-Control'
+      });
+
+      // Helper function to write SSE events
+      const writeEvent = (event: string, data: any) => {
+        const eventData = JSON.stringify(data);
+        reply.raw.write(`event: ${event}\n`);
+        reply.raw.write(`data: ${eventData}\n\n`);
+        streamMonitor.incrementTokenCount(streamId, 1);
+      };
+
+      // Send initial event
+      writeEvent('start', { 
+        message: 'Stream started',
+        threadId,
+        timestamp: new Date().toISOString()
+      });
+
+      // Prepare input messages
+      let inputs: { messages: BaseMessage[] } = { messages: [] };
+
+      // Add system message if provided
+      if (systemMessage) {
+        inputs.messages.push(new SystemMessage(systemMessage));
+      }
+
+      // Add user message
+      inputs.messages.push(new HumanMessage(content));
+
+      let lastMessage: BaseMessage | undefined;
+      let currentStep = '';
+      let accumulatedContent = '';
+
+      // Stream the workflow execution
+      const stream = await this.graph.stream(inputs, {
+        configurable: { thread_id: threadId },
+        streamMode: "values"
+      });
+
+      for await (const chunk of stream) {
+        // Detect workflow step changes
+        const currentMessages = chunk.messages || [];
+        if (currentMessages.length > 0) {
+          const latestMessage = currentMessages[currentMessages.length - 1];
+          
+          if (latestMessage !== lastMessage) {
+            // New message or message update
+            if (latestMessage.content) {
+              const messageContent = typeof latestMessage.content === 'string' 
+                ? latestMessage.content 
+                : JSON.stringify(latestMessage.content);
+              
+              // Check if this is a new step (workflow progress)
+              if (messageContent.includes('searching') || 
+                  messageContent.includes('retrieving') || 
+                  messageContent.includes('processing')) {
+                currentStep = messageContent.substring(0, 100);
+                streamMonitor.updateStreamStep(streamId, currentStep);
+                writeEvent('step', {
+                  step: currentStep,
+                  timestamp: new Date().toISOString()
+                });
+              } else {
+                // This is content streaming
+                const newContent = messageContent.slice(accumulatedContent.length);
+                if (newContent) {
+                  accumulatedContent = messageContent;
+                  writeEvent('token', {
+                    content: newContent,
+                    timestamp: new Date().toISOString()
+                  });
+                }
+              }
+            }
+            lastMessage = latestMessage;
+          }
+        }
+      }
+
+      // Send completion event
+      writeEvent('complete', {
+        message: 'Stream completed',
+        finalContent: accumulatedContent,
+        timestamp: new Date().toISOString()
+      });
+
+      // Mark stream as completed
+      streamMonitor.completeStream(streamId);
+
+    } catch (error) {
+      console.error('Streaming error:', error);
+      
+      // Send error event
+      const errorData = JSON.stringify({
+        error: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
+      });
+      reply.raw.write(`event: error\n`);
+      reply.raw.write(`data: ${errorData}\n\n`);
+      
+      streamMonitor.errorStream(streamId, error instanceof Error ? error.message : 'Unknown error');
+    } finally {
+      // Clean up
+      reply.raw.end();
+    }
+  }
+
 }

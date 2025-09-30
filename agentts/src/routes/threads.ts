@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { ThreadsController } from "../controllers/threadsController.js";
+import { ThreadsController } from '../controllers/threadsController.ts';
 
 export function createThreadsRouter(threadsController: ThreadsController): Router {
   const router = Router();

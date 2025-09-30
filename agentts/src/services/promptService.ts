@@ -1,6 +1,6 @@
 import { ChatPromptTemplate } from "@langchain/core/prompts";
 import { pull } from "langchain/hub";
-import { config } from "../config/index.js";
+import { config } from '../config/index.ts';
 
 export class PromptService {
   private static ragPromptTemplateCache: ChatPromptTemplate | null = null;

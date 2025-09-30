@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { ValidationError } from "./errorHandler.js";
+import { ValidationError } from './errorHandler.ts';
 
 // Middleware to validate chat request
 export function validateChatRequest(req: Request, res: Response, next: NextFunction): void {

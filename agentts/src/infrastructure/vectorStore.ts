@@ -3,8 +3,8 @@ import { MemoryVectorStore } from "langchain/vectorstores/memory";
 import { PineconeStore } from "@langchain/pinecone";
 import { Pinecone as PineconeClient } from "@pinecone-database/pinecone";
 import { Chroma } from "@langchain/community/vectorstores/chroma";
-import { config } from "../config/index.js";
-import { createEmbeddings } from "./llm.js";
+import { config } from '../config/index.ts';
+import { createEmbeddings } from './llm.ts';
 
 let vectorStoreInstance: VectorStore | null = null;
 let pineconeClient: PineconeClient | null = null;

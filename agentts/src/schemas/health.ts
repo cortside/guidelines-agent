@@ -1,5 +1,5 @@
 import { Type } from '@sinclair/typebox';
-import { ErrorResponseSchema } from './common.js';
+import { ErrorResponseSchema } from './common.ts';
 
 /**
  * Health check response schema

@@ -35,7 +35,7 @@ describe('Simple Chat Test', () => {
       
       assert.strictEqual(createResponse.statusCode, 201);
       const threadData = JSON.parse(createResponse.body);
-      testThreadId = threadData.id;
+      testThreadId = threadData.threadId;
       assert.ok(testThreadId);
       
       // Delete thread

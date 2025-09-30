@@ -1,8 +1,8 @@
 import { Document } from "langchain/document";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { ChatOpenAI } from "@langchain/openai";
-import { config } from "../config/index.js";
-import { createTagGenerationLLM } from "../infrastructure/llm.js";
+import { config } from '../config/index.ts';
+import { createTagGenerationLLM } from '../infrastructure/llm.ts';
 
 export class DocumentService {
   private readonly llm: ChatOpenAI;

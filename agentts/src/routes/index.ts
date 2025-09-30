@@ -1,10 +1,10 @@
 import { Router } from "express";
-import { ChatController } from "../controllers/chatController.js";
-import { HealthController } from "../controllers/healthController.js";
-import { ThreadsController } from "../controllers/threadsController.js";
-import { createChatRoutes } from "./chat.js";
-import { createHealthRoutes } from "./health.js";
-import { createThreadsRouter } from "./threads.js";
+import { ChatController } from '../controllers/chatController.ts';
+import { HealthController } from '../controllers/healthController.ts';
+import { ThreadsController } from '../controllers/threadsController.ts';
+import { createChatRoutes } from './chat.ts';
+import { createHealthRoutes } from './health.ts';
+import { createThreadsRouter } from './threads.ts';
 
 export function createRoutes(
   chatController: ChatController,

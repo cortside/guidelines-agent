@@ -1,5 +1,5 @@
 import { Type } from '@sinclair/typebox';
-import { ErrorResponseSchema } from './common.js';
+import { ErrorResponseSchema } from './common.ts';
 
 /**
  * Chat request schema - defines the structure for incoming chat messages
@@ -16,7 +16,12 @@ export const ChatRequestSchema = Type.Object({
     examples: ['What are the REST API guidelines?'],
     minLength: 1,
     maxLength: 5000
-  })
+  }),
+  systemMessage: Type.Optional(Type.String({
+    description: 'Optional system message to provide context or instructions',
+    examples: ['You are a helpful assistant focused on REST API guidelines'],
+    maxLength: 2000
+  }))
 });
 
 /**
@@ -80,6 +85,142 @@ export const ThreadHistoryResponseSchema = Type.Object({
   totalMessages: Type.Number({
     description: 'Total number of messages in the thread',
     examples: [5]
+  })
+});
+
+/**
+ * Streaming event schemas for Server-Sent Events
+ */
+
+// Base event data that all streaming events share
+const BaseStreamEventSchema = Type.Object({
+  messageId: Type.String({
+    description: 'Unique identifier for this streaming session',
+    examples: ['msg-1727632800123-abc123def']
+  }),
+  timestamp: Type.String({
+    format: 'date-time',
+    description: 'When this event was generated',
+    examples: ['2025-09-29T12:00:00.000Z']
+  })
+});
+
+// Start event - initializes streaming session
+export const StreamStartEventSchema = Type.Intersect([
+  BaseStreamEventSchema,
+  Type.Object({
+    threadId: Type.String({
+      description: 'Thread ID for this conversation',
+      examples: ['thread-abc123']
+    })
+  })
+]);
+
+// Step event - workflow progress updates
+export const StreamStepEventSchema = Type.Object({
+  step: Type.Union([
+    Type.Literal('retrieval'),
+    Type.Literal('ranking'), 
+    Type.Literal('generation')
+  ], {
+    description: 'Current workflow step being processed',
+    examples: ['retrieval', 'ranking', 'generation']
+  }),
+  status: Type.Union([
+    Type.Literal('processing'),
+    Type.Literal('started'),
+    Type.Literal('complete')
+  ], {
+    description: 'Status of the current step',
+    examples: ['processing', 'started']
+  }),
+  message: Type.String({
+    description: 'Human-readable progress message',
+    examples: ['Searching relevant documents...', 'Generating response...']
+  })
+});
+
+// Token event - content chunks during generation
+export const StreamTokenEventSchema = Type.Object({
+  content: Type.String({
+    description: 'Text content chunk',
+    examples: ['Based ', 'on the ', 'guidelines, ']
+  })
+});
+
+// Complete event - successful completion
+export const StreamCompleteEventSchema = Type.Intersect([
+  BaseStreamEventSchema,
+  Type.Object({
+    status: Type.Literal('complete', {
+      description: 'Indicates successful completion'
+    })
+  })
+]);
+
+// Error event - error occurred
+export const StreamErrorEventSchema = Type.Intersect([
+  BaseStreamEventSchema,
+  Type.Object({
+    error: Type.String({
+      description: 'Error message',
+      examples: ['Connection timeout', 'Invalid thread ID']
+    }),
+    step: Type.Optional(Type.String({
+      description: 'Workflow step where error occurred',
+      examples: ['retrieval', 'generation']
+    }))
+  })
+]);
+
+// Cancelled event - user cancellation
+export const StreamCancelledEventSchema = Type.Intersect([
+  BaseStreamEventSchema,
+  Type.Object({
+    step: Type.Optional(Type.String({
+      description: 'Workflow step when cancelled',
+      examples: ['generation', 'ranking']
+    }))
+  })
+]);
+
+/**
+ * Union type for all possible streaming events
+ * Used for TypeScript type inference
+ */
+export const StreamEventSchema = Type.Union([
+  StreamStartEventSchema,
+  StreamStepEventSchema,
+  StreamTokenEventSchema,
+  StreamCompleteEventSchema,
+  StreamErrorEventSchema,
+  StreamCancelledEventSchema
+]);
+
+/**
+ * Streaming response documentation for OpenAPI
+ * Note: SSE responses can't be fully represented in OpenAPI 3.0,
+ * but we document the event types and format
+ */
+export const StreamResponseSchema = Type.Object({
+  description: Type.Literal('Server-Sent Events stream', {
+    description: 'Real-time streaming response using text/event-stream'
+  }),
+  events: Type.Object({
+    start: StreamStartEventSchema,
+    step: StreamStepEventSchema,
+    token: StreamTokenEventSchema,
+    complete: StreamCompleteEventSchema,
+    error: StreamErrorEventSchema,
+    cancelled: StreamCancelledEventSchema
+  }, {
+    description: 'Possible event types in the SSE stream'
+  }),
+  example: Type.String({
+    description: 'Example SSE stream format',
+    examples: [
+      'event: start\ndata: {"messageId":"msg-123","threadId":"thread-abc","timestamp":"2025-09-29T12:00:00Z"}\n\nevent: step\ndata: {"step":"retrieval","status":"processing","message":"Searching documents..."}\n\nevent: token\ndata: {"content":"Based "}\n\nevent: complete\ndata: {"messageId":"msg-123","status":"complete","timestamp":"2025-09-29T12:00:05Z"}\n\n'
+    ]
   })
 });
 

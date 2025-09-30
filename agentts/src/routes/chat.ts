@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { ChatController } from "../controllers/chatController.js";
-import { validateChatRequest, validateThreadId } from "../middleware/validator.js";
+import { ChatController } from '../controllers/chatController.ts';
+import { validateChatRequest, validateThreadId } from '../middleware/validator.ts';
 
 export function createChatRoutes(chatController: ChatController): Router {
   const router = Router();

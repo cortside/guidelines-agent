@@ -1,13 +1,13 @@
 import express from "express";
 import bodyParser from "body-parser";
 import cors from "cors";
-import { config } from "./config/index.js";
-import { ChatService } from "./services/chatService.js";
-import { ChatController } from "./controllers/chatController.js";
-import { HealthController } from "./controllers/healthController.js";
-import { ThreadsController } from "./controllers/threadsController.js";
-import { createRoutes } from "./routes/index.js";
-import { errorHandler } from "./middleware/errorHandler.js";
+import { config } from './config/index.ts';
+import { ChatService } from './services/chatService.ts';
+import { ChatController } from './controllers/chatController.ts';
+import { HealthController } from './controllers/healthController.ts';
+import { ThreadsController } from './controllers/threadsController.ts';
+import { createRoutes } from './routes/index.ts';
+import { errorHandler } from './middleware/errorHandler.ts';
 
 async function startServer() {
   try {

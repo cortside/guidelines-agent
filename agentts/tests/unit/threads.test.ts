@@ -1,6 +1,6 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert';
-import { createTestFastifyInstance } from '../testSetup.js';
+import { createTestFastifyInstance } from '../testSetup.ts';
 
 describe('Threads Routes', () => {
   test('GET /threads should return all threads', async (t) => {
@@ -38,8 +38,8 @@ describe('Threads Routes', () => {
       assert.ok(Array.isArray(body.threads));
       assert.strictEqual(body.threads.length, 2);
       assert.strictEqual(body.total, 2);
-      assert.strictEqual(body.threads[0].id, 'thread-1');
-      assert.strictEqual(body.threads[1].id, 'thread-2');
+      assert.strictEqual(body.threads[0].threadId, 'thread-1');
+      assert.strictEqual(body.threads[1].threadId, 'thread-2');
     } finally {
       await fastify.close();
     }
@@ -69,7 +69,7 @@ describe('Threads Routes', () => {
       assert.strictEqual(response.statusCode, 201);
       const body = JSON.parse(response.body);
       assert.strictEqual(body.name, 'New Thread');
-      assert.ok(body.id.startsWith('thread-')); // Route generates its own ID
+      assert.ok(body.threadId.startsWith('thread-')); // Route generates its own ID
       assert.ok(body.createdAt);
       assert.strictEqual(body.messageCount, 0);
     } finally {
@@ -123,7 +123,7 @@ describe('Threads Routes', () => {
       
       assert.strictEqual(response.statusCode, 200);
       const body = JSON.parse(response.body);
-      assert.strictEqual(body.id, 'thread-123');
+      assert.strictEqual(body.threadId, 'thread-123');
       assert.strictEqual(body.name, 'Updated Thread Name');
       assert.ok(body.updatedAt);
     } finally {

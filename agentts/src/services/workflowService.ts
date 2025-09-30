@@ -16,7 +16,7 @@ import {
   BaseMessage,
 } from "@langchain/core/messages";
 import { ToolNode, toolsCondition } from "@langchain/langgraph/prebuilt";
-import { config } from "../config/index.js";
+import { config } from '../config/index.ts';
 
 export class WorkflowService {
   static create(vectorStore: VectorStore, llm: ChatOpenAI, promptTemplate: any) {

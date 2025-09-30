@@ -39,10 +39,10 @@
     "typescript": "^5.6.3"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
-    "start": "node dist/src/fastify-main.js",
-    "start:express": "node dist/main-new.js",
-    "start:fastify": "node dist/src/fastify-main.js",
+    "build": "npx tsc --noEmit",
+    "start": "npx tsx src/fastify-main.ts",
+    "start:express": "npx tsx main-new.ts",
+    "start:fastify": "npx tsx src/fastify-main.ts",
     "dev": "node --loader ts-node/esm src/fastify-main.ts",
     "dev:express": "node --loader ts-node/esm main-new.ts",
     "dev:fastify": "node --loader ts-node/esm src/fastify-main.ts",

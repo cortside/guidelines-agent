@@ -36,7 +36,7 @@ describe('Chat Workflow Integration', () => {
     
     assert.strictEqual(createResponse.statusCode, 201);
     const threadData = JSON.parse(createResponse.body);
-    testThreadId = threadData.id;
+    testThreadId = threadData.threadId;
     assert.ok(testThreadId);
     assert.strictEqual(threadData.name, 'Integration Test Thread');
     assert.strictEqual(threadData.messageCount, 0);
